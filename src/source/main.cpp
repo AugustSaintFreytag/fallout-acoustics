@@ -66,7 +66,7 @@ __declspec(dllexport) bool NVSEPlugin_Load(NVSEInterface* nvse) {
 	auto* messaging = static_cast<NVSEMessagingInterface*>(nvse->QueryInterface(kInterface_Messaging));
 
 	if (!messaging || messaging->version < 4 || !messaging->RegisterListener(pluginHandle, "NVSE", OnMessage)) {
-		SEA_LOG("Error: Messaging interface is unavailable or too old.");
+		SEA_LOG("Error: Messaging interface is unavailable or defunct.");
 
 		return false;
 	}
@@ -79,7 +79,7 @@ __declspec(dllexport) bool NVSEPlugin_Load(NVSEInterface* nvse) {
 	}
 
 	if (!sea::hooks::InstallVoiceHooks()) {
-		SEA_LOG("Error: Could not install voice hooks. Face covers other than power armor are not filtered.");
+		SEA_LOG("Error: Could not install voice modulation hooks.");
 	}
 
 	SEA_LOG("Plugin loaded.");

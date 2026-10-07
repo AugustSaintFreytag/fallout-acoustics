@@ -81,6 +81,7 @@ namespace sea::config {
 			sends.loops3D = ReadFloat(iniPath, "Sends", "fLoops3D", sends.loops3D);
 			sends.loops2D = ReadFloat(iniPath, "Sends", "fLoops2D", sends.loops2D);
 			sends.region = ReadFloat(iniPath, "Sends", "fRegion", sends.region);
+			sends.radio3D = ReadFloat(iniPath, "Sends", "fRadio3D", sends.radio3D);
 			sends.default3D = ReadFloat(iniPath, "Sends", "fDefault3D", sends.default3D);
 			sends.default2D = ReadFloat(iniPath, "Sends", "fDefault2D", sends.default2D);
 		}
@@ -114,9 +115,9 @@ namespace sea::config {
 				engine::EnvironmentTypeName(reverb.exteriorFallback), g_settings.hotkeys.bypassKey);
 
 			SEA_LOG("Config sends (dB): Voice3D=%.1f Voice2D=%.1f Weapons=%.1f Footsteps=%.1f Loops3D=%.1f Loops2D=%.1f "
-					"Region=%.1f Default3D=%.1f Default2D=%.1f",
+					"Region=%.1f Radio3D=%.1f Default3D=%.1f Default2D=%.1f",
 				sends.voice3D, sends.voice2D, sends.weapons, sends.footsteps, sends.loops3D, sends.loops2D, sends.region,
-				sends.default3D, sends.default2D);
+				sends.radio3D, sends.default3D, sends.default2D);
 
 			SEA_LOG("Config voice filters: Enabled=%d", g_settings.voiceFilters.enabled);
 

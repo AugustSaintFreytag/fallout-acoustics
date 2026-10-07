@@ -5,6 +5,7 @@
 #include "effects/mask_filter.h"
 #include "effects/voice_cover.h"
 #include "engine/addresses.h"
+#include "engine/sound_flags.h"
 #include "reverb/reverb.h"
 #include "utils/log.h"
 #include "utils/memory.h"
@@ -141,7 +142,14 @@ namespace sea::effects {
 			return;
 		}
 
-		const VoiceCover cover = VoiceCoverFromFlags(Field<std::uint32_t>(gameSound, engine::kSound_TypeFlags));
+		const std::uint32_t soundFlags = Field<std::uint32_t>(gameSound, engine::kSound_TypeFlags);
+
+		// Radio songs can be streamed, and the filter needs the complete sound in the buffer.
+		if (soundFlags & engine::kSound_Radio) {
+			return;
+		}
+
+		const VoiceCover cover = VoiceCoverFromFlags(soundFlags);
 		const MaskFilterPreset* preset = PresetFor(cover);
 
 		if (!preset) {

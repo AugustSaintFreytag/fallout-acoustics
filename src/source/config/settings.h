@@ -27,6 +27,7 @@ namespace sea::config {
 		float loops3D = -6.0f;  // Placed ambient emitters
 		float loops2D = kSendOff;
 		float region = kSendOff;  // Region one-shots and ambience
+		float radio3D = 0.0f;  // Radios placed in the world
 		float default3D = 0.0f;
 		float default2D = 0.0f;
 	};
