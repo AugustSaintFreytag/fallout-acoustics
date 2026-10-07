@@ -6,6 +6,7 @@
 #include "debug/cell_probe.h"
 #include "debug/sound_probe.h"
 #include "hooks/sound_hooks.h"
+#include "hooks/voice_hooks.h"
 #include "input/hotkeys.h"
 #include "reverb/listener.h"
 #include "utils/log.h"
@@ -75,6 +76,10 @@ __declspec(dllexport) bool NVSEPlugin_Load(NVSEInterface* nvse) {
 
 	if (!sea::hooks::InstallSoundHooks()) {
 		SEA_LOG("Error: Could not install sound hooks.");
+	}
+
+	if (!sea::hooks::InstallVoiceHooks()) {
+		SEA_LOG("Error: Could not install voice hooks. Face covers other than power armor are not filtered.");
 	}
 
 	SEA_LOG("Plugin loaded.");

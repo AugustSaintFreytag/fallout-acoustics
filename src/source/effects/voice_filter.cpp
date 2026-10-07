@@ -1,10 +1,10 @@
-#include "effects/modulated_voice.h"
+#include "effects/voice_filter.h"
 
 #include "audio/directsound.h"
 #include "config/settings.h"
 #include "effects/mask_filter.h"
+#include "effects/voice_cover.h"
 #include "engine/addresses.h"
-#include "engine/sound_flags.h"
 #include "reverb/reverb.h"
 #include "utils/log.h"
 #include "utils/memory.h"
@@ -17,6 +17,46 @@ namespace sea::effects {
 	using mem::Field;
 
 	namespace {
+		// Cloth: the fabric absorbs some of the high frequencies, nothing more.
+		constexpr MaskFilterPreset kLightCoverPreset{
+			.lowCutHz = 0.0,
+			.resonanceHz = 0.0,
+			.resonanceGainDb = 0.0,
+			.presenceHz = 0.0,
+			.presenceGainDb = 0.0,
+			.highCutHz = 4000.0,
+			.steepHighCut = false,
+			.driveDb = 0.0,
+			.gainDb = 1.0,
+		};
+
+		// Gas mask: a rubber cavity with a low, boxy resonance and strong muffling.
+		// The small presence peak keeps the words understandable.
+		constexpr MaskFilterPreset kFullCoverPreset{
+			.lowCutHz = 180.0,
+			.resonanceHz = 650.0,
+			.resonanceGainDb = 6.0,
+			.presenceHz = 1500.0,
+			.presenceGainDb = 2.0,
+			.highCutHz = 2300.0,
+			.steepHighCut = true,
+			.driveDb = 0.0,
+			.gainDb = 3.0,
+		};
+
+		// Small helmet speaker or intercom: thin, a cone peak, band limited, slightly driven.
+		constexpr MaskFilterPreset kSpeakerPreset{
+			.lowCutHz = 350.0,
+			.resonanceHz = 1000.0,
+			.resonanceGainDb = 4.0,
+			.presenceHz = 2500.0,
+			.presenceGainDb = 3.0,
+			.highCutHz = 3400.0,
+			.steepHighCut = true,
+			.driveDb = 6.0,
+			.gainDb = 1.0,
+		};
+
 		constexpr std::size_t kMaxTrackedBuffers = 512;
 
 		// Content hash of each buffer after filtering.
@@ -25,6 +65,22 @@ namespace sea::effects {
 		std::unordered_map<std::uint32_t, std::uint64_t> g_filteredContent;
 
 		bool g_unsupportedFormatLogged = false;  // Audio thread only.
+
+		const MaskFilterPreset* PresetFor(VoiceCover cover) {
+			switch (cover) {
+			case VoiceCover::Light:
+				return &kLightCoverPreset;
+
+			case VoiceCover::Full:
+				return &kFullCoverPreset;
+
+			case VoiceCover::Speaker:
+				return &kSpeakerPreset;
+
+			default:
+				return nullptr;
+			}
+		}
 
 		// FNV-1a, 64 bit.
 		std::uint64_t HashContent(const void* data, std::size_t size) {
@@ -61,24 +117,6 @@ namespace sea::effects {
 			g_filteredContent[buffer] = contentHash;
 		}
 
-		bool ShouldFilter(void* gameSound) {
-			if (!config::Get().mask.enabled) {
-				return false;
-			}
-
-			const std::uint32_t flags = Field<std::uint32_t>(gameSound, engine::kSound_TypeFlags);
-
-			if (!(flags & engine::kSound_Modulated)) {
-				return false;
-			}
-
-			if (!audio::IsDsoalLoaded()) {
-				return false;
-			}
-
-			return !reverb::IsBypassed();
-		}
-
 		bool IsSupportedFormat(const WAVEFORMATEX& format) {
 			if (format.wFormatTag != WAVE_FORMAT_PCM || format.wBitsPerSample != 16 || format.nChannels == 0) {
 				return false;
@@ -93,13 +131,20 @@ namespace sea::effects {
 			}
 
 			g_unsupportedFormatLogged = true;
-			SEA_LOG("[Mask] Format is not supported: Tag=%u Bits=%u Channels=%u. Only 16-bit PCM is filtered.",
+			SEA_LOG("[Voice] Format is not supported: Tag=%u Bits=%u Channels=%u. Only 16-bit PCM is filtered.",
 				format.wFormatTag, format.wBitsPerSample, format.nChannels);
 		}
 	}
 
-	void ProcessModulatedVoice(void* gameSound) {
-		if (!ShouldFilter(gameSound)) {
+	void ProcessVoiceFilter(void* gameSound) {
+		if (!config::Get().voiceFilters.enabled || reverb::IsBypassed() || !audio::IsDsoalLoaded()) {
+			return;
+		}
+
+		const VoiceCover cover = VoiceCoverFromFlags(Field<std::uint32_t>(gameSound, engine::kSound_TypeFlags));
+		const MaskFilterPreset* preset = PresetFor(cover);
+
+		if (!preset) {
 			return;
 		}
 
@@ -112,13 +157,7 @@ namespace sea::effects {
 		auto* buffer = reinterpret_cast<IDirectSoundBuffer8*>(bufferAddress);
 		WAVEFORMATEX format{};
 
-		if (FAILED(buffer->GetFormat(&format, sizeof(format), nullptr))) {
-			LogUnsupportedFormat(format);
-
-			return;
-		}
-
-		if (!IsSupportedFormat(format)) {
+		if (FAILED(buffer->GetFormat(&format, sizeof(format), nullptr)) || !IsSupportedFormat(format)) {
 			LogUnsupportedFormat(format);
 
 			return;
@@ -141,14 +180,15 @@ namespace sea::effects {
 
 		const std::size_t frameCount = audioBytes / format.nBlockAlign;
 		const double gainDb = ApplyMaskFilter(static_cast<std::int16_t*>(audio), frameCount, format.nChannels,
-			static_cast<double>(format.nSamplesPerSec), config::Get().mask);
+			static_cast<double>(format.nSamplesPerSec), *preset);
 
 		RememberFiltered(bufferAddress, HashContent(audio, audioBytes));
 		buffer->Unlock(audio, audioBytes, wrappedAudio, wrappedBytes);
 
 		const double durationSeconds = static_cast<double>(frameCount) / format.nSamplesPerSec;
 
-		SEA_LOG("[Mask] Filtered %p: %lu Hz, %u ch, %.2f s, Gain %+.1f dB, Path=\"%.200s\"", gameSound,
-			format.nSamplesPerSec, format.nChannels, durationSeconds, gainDb, &Field<char>(gameSound, engine::kSound_FilePath));
+		SEA_LOG("[Voice] Filtered %p as %s: %lu Hz, %u ch, %.2f s, Gain %+.1f dB, Path=\"%.200s\"", gameSound,
+			VoiceCoverName(cover), format.nSamplesPerSec, format.nChannels, durationSeconds, gainDb,
+			&Field<char>(gameSound, engine::kSound_FilePath));
 	}
 }

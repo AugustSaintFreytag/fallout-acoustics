@@ -20,6 +20,10 @@ namespace sea::mem {
 	// Returns previous value, or `nullptr` if write fails.
 	void* PatchPointer(std::uintptr_t slot, void* replacement);
 
+	// Redirects a `call rel32` instruction at `callAddress` to `replacement`.
+	// Returns false if the instruction is not a call to `expectedTarget` (for example, another plugin patched it).
+	bool PatchCall(std::uintptr_t callAddress, std::uintptr_t expectedTarget, void* replacement);
+
 	struct ModuleRange {
 		std::uintptr_t begin = 0;
 		std::uintptr_t end = 0;

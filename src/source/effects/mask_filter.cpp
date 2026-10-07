@@ -9,9 +9,10 @@
 namespace sea::effects {
 	namespace {
 		constexpr double kPeakLimit = 0.97;  // Of full scale. Keeps headroom for rounding.
-		constexpr double kLowCutQ = 0.7071;  // Butterworth
-		constexpr double kHighCutQ = 0.9;  // Small peak before the cutoff, like a small speaker.
+		constexpr double kButterworthQ = 0.7071;
+		constexpr double kSpeakerHighCutQ = 0.9;  // Small peak before the cutoff, like a small speaker.
 		constexpr double kResonanceQ = 1.2;
+		constexpr double kPresenceQ = 1.5;
 
 		double DecibelsToGain(double decibels) {
 			return std::pow(10.0, decibels / 20.0);
@@ -41,33 +42,51 @@ namespace sea::effects {
 			return peak;
 		}
 
+		// A default Biquad passes the signal unchanged, so stages that are off cost little.
 		struct FilterChain {
 			Biquad lowCut;
 			Biquad resonance;
+			Biquad presence;
 			Biquad highCut1;
 			Biquad highCut2;
 
 			double Process(double sample) {
 				sample = lowCut.Process(sample);
 				sample = resonance.Process(sample);
+				sample = presence.Process(sample);
 				sample = highCut1.Process(sample);
 
 				return highCut2.Process(sample);
 			}
 		};
 
-		FilterChain MakeFilterChain(double sampleRate, const config::MaskSettings& settings) {
+		FilterChain MakeFilterChain(double sampleRate, const MaskFilterPreset& preset) {
 			// Keeps all frequencies well below Nyquist. Voice buffers can be 22 or 24 kHz.
 			const double frequencyLimit = sampleRate * 0.45;
-			const double highCut = std::min<double>(settings.highCutHz, frequencyLimit);
-			const double resonance = std::min<double>(settings.resonanceHz, frequencyLimit);
-			const double lowCut = std::min<double>(settings.lowCutHz, highCut * 0.5);
+			const double highCut = std::min(preset.highCutHz, frequencyLimit);
 
 			FilterChain chain;
-			chain.lowCut = Biquad::HighPass(sampleRate, lowCut, kLowCutQ);
-			chain.resonance = Biquad::Peaking(sampleRate, resonance, kResonanceQ, settings.resonanceGainDb);
-			chain.highCut1 = Biquad::LowPass(sampleRate, highCut, kHighCutQ);
-			chain.highCut2 = Biquad::LowPass(sampleRate, highCut, kLowCutQ);
+
+			if (preset.lowCutHz > 0.0) {
+				chain.lowCut = Biquad::HighPass(sampleRate, std::min(preset.lowCutHz, highCut * 0.5), kButterworthQ);
+			}
+
+			if (preset.resonanceGainDb != 0.0) {
+				const double resonance = std::min(preset.resonanceHz, frequencyLimit);
+				chain.resonance = Biquad::Peaking(sampleRate, resonance, kResonanceQ, preset.resonanceGainDb);
+			}
+
+			if (preset.presenceGainDb != 0.0) {
+				const double presence = std::min(preset.presenceHz, frequencyLimit);
+				chain.presence = Biquad::Peaking(sampleRate, presence, kPresenceQ, preset.presenceGainDb);
+			}
+
+			if (preset.steepHighCut) {
+				chain.highCut1 = Biquad::LowPass(sampleRate, highCut, kSpeakerHighCutQ);
+				chain.highCut2 = Biquad::LowPass(sampleRate, highCut, kButterworthQ);
+			} else {
+				chain.highCut1 = Biquad::LowPass(sampleRate, highCut, kButterworthQ);
+			}
 
 			return chain;
 		}
@@ -100,7 +119,7 @@ namespace sea::effects {
 	}
 
 	double ApplyMaskFilter(std::int16_t* samples, std::size_t frameCount, unsigned channelCount, double sampleRate,
-		const config::MaskSettings& settings) {
+		const MaskFilterPreset& preset) {
 		double appliedGainDb = 0.0;
 
 		if (frameCount == 0 || channelCount == 0 || sampleRate <= 0.0) {
@@ -120,13 +139,13 @@ namespace sea::effects {
 				continue;
 			}
 
-			FilterChain chain = MakeFilterChain(sampleRate, settings);
+			FilterChain chain = MakeFilterChain(sampleRate, preset);
 
 			for (double& sample : signal) {
 				sample = chain.Process(sample);
 			}
 
-			Saturate(signal, settings.driveDb);
+			Saturate(signal, preset.driveDb);
 
 			const double outputLevel = RootMeanSquare(signal);
 
@@ -134,7 +153,7 @@ namespace sea::effects {
 				continue;
 			}
 
-			double gain = inputLevel / outputLevel * DecibelsToGain(settings.gainDb);
+			double gain = inputLevel / outputLevel * DecibelsToGain(preset.gainDb);
 			const double peak = Peak(signal) * gain;
 
 			if (peak > kPeakLimit) {

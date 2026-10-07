@@ -85,16 +85,10 @@ namespace sea::config {
 			sends.default2D = ReadFloat(iniPath, "Sends", "fDefault2D", sends.default2D);
 		}
 
-		void LoadMask(const char* iniPath) {
-			MaskSettings& mask = g_settings.mask;
+		void LoadVoiceFilters(const char* iniPath) {
+			VoiceFilterSettings& voiceFilters = g_settings.voiceFilters;
 
-			mask.enabled = ReadBool(iniPath, "Mask", "bEnabled", mask.enabled);
-			mask.gainDb = ReadFloat(iniPath, "Mask", "fGain", mask.gainDb);
-			mask.lowCutHz = ReadFloat(iniPath, "Mask", "fLowCut", mask.lowCutHz);
-			mask.highCutHz = ReadFloat(iniPath, "Mask", "fHighCut", mask.highCutHz);
-			mask.resonanceHz = ReadFloat(iniPath, "Mask", "fResonanceFrequency", mask.resonanceHz);
-			mask.resonanceGainDb = ReadFloat(iniPath, "Mask", "fResonanceGain", mask.resonanceGainDb);
-			mask.driveDb = ReadFloat(iniPath, "Mask", "fDrive", mask.driveDb);
+			voiceFilters.enabled = ReadBool(iniPath, "VoiceFilters", "bEnabled", voiceFilters.enabled);
 		}
 
 		void LoadDebug(const char* iniPath) {
@@ -107,6 +101,7 @@ namespace sea::config {
 			debug.layoutProbeCount = static_cast<std::uint32_t>(ReadInt(iniPath, "Debug", "iLayoutProbeCount", debug.layoutProbeCount));
 			debug.deferEaxSets = ReadBool(iniPath, "Debug", "bDeferEaxSets", debug.deferEaxSets);
 			debug.logRouteTiming = ReadBool(iniPath, "Debug", "bLogRouteTiming", debug.logRouteTiming);
+			debug.logVoiceCover = ReadBool(iniPath, "Debug", "bLogVoiceCover", debug.logVoiceCover);
 		}
 
 		void LogSettings() {
@@ -123,11 +118,7 @@ namespace sea::config {
 				sends.voice3D, sends.voice2D, sends.weapons, sends.footsteps, sends.loops3D, sends.loops2D, sends.region,
 				sends.default3D, sends.default2D);
 
-			const MaskSettings& mask = g_settings.mask;
-
-			SEA_LOG("Config mask: Enabled=%d Gain=%.1fdB LowCut=%.0fHz HighCut=%.0fHz Resonance=%.0fHz/%.1fdB Drive=%.1fdB",
-				mask.enabled, mask.gainDb, mask.lowCutHz, mask.highCutHz, mask.resonanceHz, mask.resonanceGainDb,
-				mask.driveDb);
+			SEA_LOG("Config voice filters: Enabled=%d", g_settings.voiceFilters.enabled);
 
 			const char* forceEnvironmentName = "off";
 
@@ -136,16 +127,16 @@ namespace sea::config {
 			}
 
 			SEA_LOG("Config debug: Force=%s Readback=%u LogSoundPlay=%d LogSoundEnvironment=%d LayoutProbeCount=%u "
-					"DeferEaxSets=%d LogRouteTiming=%d",
+					"DeferEaxSets=%d LogRouteTiming=%d LogVoiceCover=%d",
 				forceEnvironmentName, debug.readbackCount, debug.logSoundPlay, debug.logSoundEnvironment,
-				debug.layoutProbeCount, debug.deferEaxSets, debug.logRouteTiming);
+				debug.layoutProbeCount, debug.deferEaxSets, debug.logRouteTiming, debug.logVoiceCover);
 		}
 	}
 
 	void Load(const std::string& iniPath) {
 		LoadReverb(iniPath.c_str());
 		LoadSends(iniPath.c_str());
-		LoadMask(iniPath.c_str());
+		LoadVoiceFilters(iniPath.c_str());
 		LoadDebug(iniPath.c_str());
 
 		SEA_LOG("Config loaded from %s.", iniPath.c_str());
