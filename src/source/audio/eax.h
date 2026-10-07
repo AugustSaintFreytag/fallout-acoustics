@@ -13,6 +13,10 @@ namespace sea::eax {
 	inline constexpr GUID kSource = {0x1B86B823, 0x22DF, 0x4EAE, {0x8B, 0x3C, 0x12, 0x78, 0xCE, 0x54, 0x42, 0x27}};
 	inline constexpr GUID kNull = {};
 
+	// Property ID flag. The value is stored and applied at the next immediate set.
+	// OpenAL Soft ignores the flag on FX slot properties (kFXSlot_*), these are always immediate.
+	inline constexpr ULONG kDeferred = 0x80000000;
+
 	// FX slot properties
 	// Property set: kFXSlotN
 	enum : ULONG {

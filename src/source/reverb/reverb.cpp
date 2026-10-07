@@ -30,7 +30,19 @@ namespace sea::reverb {
 		std::uint32_t g_appliedEnvironment = 0;
 		LONG g_appliedVolume = 1;  // Invalid level, first apply always runs.
 
-		void ApplyEnvironment(IKsPropertySet* propertySet) {
+		// Adds the deferred flag if `[Debug] bDeferEaxSets` is on.
+		// The last set in `ApplySource` is immediate and commits all deferred values.
+		// If a set fails before it, the next sound commits the values.
+		ULONG Deferred(ULONG propertyId) {
+			if (!config::Get().debug.deferEaxSets) {
+				return propertyId;
+			}
+
+			return propertyId | eax::kDeferred;
+		}
+
+		// Returns true if the reverb parameters changed.
+		bool ApplyEnvironment(IKsPropertySet* propertySet) {
 			const config::Settings& settings = config::Get();
 			std::uint32_t environment = GetListenerEnvironment();
 
@@ -39,15 +51,17 @@ namespace sea::reverb {
 			}
 
 			if (environment == 0 || environment == g_appliedEnvironment) {
-				return;
+				return false;
 			}
 
 			eax::ReverbProperties preset = kPresets[environment - 1];
 			const LONG roomBoost = static_cast<LONG>(std::lround(settings.reverb.roomBoostDb * 100.0f));
 			preset.room = std::clamp(preset.room + roomBoost, eax::kMinLevel, 0L);
 
-			if (!eax::SetProperty(propertySet, eax::kFXSlot0, eax::kReverb_AllParameters, &preset, sizeof(preset), "reverb parameters")) {
-				return;
+			const ULONG propertyId = Deferred(eax::kReverb_AllParameters);
+
+			if (!eax::SetProperty(propertySet, eax::kFXSlot0, propertyId, &preset, sizeof(preset), "reverb parameters")) {
+				return false;
 			}
 
 			g_appliedEnvironment = environment;
@@ -61,7 +75,7 @@ namespace sea::reverb {
 			SEA_LOG("[Reverb] Slot 0 <- %s%s (Decay %.2fs, Room %ld mB)", engine::EnvironmentTypeName(environment),
 				forcedSuffix, preset.decayTime, preset.room);
 
-			debug::ReadBackSlot(propertySet);
+			return true;
 		}
 
 		void ApplyVolume(IKsPropertySet* propertySet) {
@@ -89,9 +103,12 @@ namespace sea::reverb {
 		}
 
 		// Set FX slot 0 to the desired env and fx wet level, if values have changed.
-		void ApplySlot(IKsPropertySet* propertySet) {
-			ApplyEnvironment(propertySet);
+		// Returns true if the reverb parameters changed.
+		bool ApplySlot(IKsPropertySet* propertySet) {
+			const bool environmentChanged = ApplyEnvironment(propertySet);
 			ApplyVolume(propertySet);
+
+			return environmentChanged;
 		}
 
 		void ApplySource(IKsPropertySet* propertySet, const Route& route) {
@@ -105,7 +122,9 @@ namespace sea::reverb {
 
 			slots.slots[0] = eax::kFXSlot0;
 
-			if (!eax::SetProperty(propertySet, eax::kSource, eax::kSource_ActiveFXSlotID, &slots, sizeof(slots), "active slots")) {
+			const ULONG propertyId = Deferred(eax::kSource_ActiveFXSlotID);
+
+			if (!eax::SetProperty(propertySet, eax::kSource, propertyId, &slots, sizeof(slots), "active slots")) {
 				return;
 			}
 
@@ -176,10 +195,15 @@ namespace sea::reverb {
 			return "no-eax";
 		}
 
-		ApplySlot(propertySet);
+		const bool environmentChanged = ApplySlot(propertySet);
 
 		const Route route = Classify(Field<std::uint32_t>(gameSound, engine::kSound_TypeFlags));
 		ApplySource(propertySet, route);
+
+		// Read back after ApplySource, so that deferred values are committed.
+		if (environmentChanged) {
+			debug::ReadBackSlot(propertySet);
+		}
 
 		if (route.sendDb > config::kSendOff) {
 			debug::ReadBackSource(propertySet, route.label);

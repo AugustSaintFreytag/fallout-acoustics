@@ -2,6 +2,7 @@
 
 #include "audio/directsound.h"
 #include "config/settings.h"
+#include "debug/route_timing.h"
 #include "debug/sound_probe.h"
 #include "engine/addresses.h"
 #include "reverb/reverb.h"
@@ -22,7 +23,10 @@ namespace sea::hooks {
 
 		bool __fastcall Hook_Play(void* sound, void* /*edx*/, bool loop) {
 			// Route before the original `Play` call, let first samples go to reverb immediately.
+			const std::int64_t routeStartTime = debug::BeginRouteTiming();
 			const char* route = reverb::OnSoundPlay(sound);
+			debug::EndRouteTiming(routeStartTime);
+
 			const bool result = g_originalPlay(sound, loop);
 
 			debug::OnSoundPlayed(sound, loop, route);

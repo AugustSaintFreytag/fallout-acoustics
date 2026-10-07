@@ -18,6 +18,7 @@ add_library(SaintsAcoustics SHARED
 
 	source/debug/cell_probe.cpp
 	source/debug/eax_readback.cpp
+	source/debug/route_timing.cpp
 	source/debug/sound_probe.cpp
 
 	source/engine/environment.cpp

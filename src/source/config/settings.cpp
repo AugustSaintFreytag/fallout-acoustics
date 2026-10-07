@@ -93,6 +93,8 @@ namespace sea::config {
 			debug.logSoundPlay = ReadBool(iniPath, "Debug", "bLogSoundPlay", debug.logSoundPlay);
 			debug.logSoundEnvironment = ReadBool(iniPath, "Debug", "bLogSoundEnvironment", debug.logSoundEnvironment);
 			debug.layoutProbeCount = static_cast<std::uint32_t>(ReadInt(iniPath, "Debug", "iLayoutProbeCount", debug.layoutProbeCount));
+			debug.deferEaxSets = ReadBool(iniPath, "Debug", "bDeferEaxSets", debug.deferEaxSets);
+			debug.logRouteTiming = ReadBool(iniPath, "Debug", "bLogRouteTiming", debug.logRouteTiming);
 		}
 
 		void LogSettings() {
@@ -115,9 +117,10 @@ namespace sea::config {
 				forceEnvironmentName = engine::EnvironmentTypeName(debug.forceEnvironment);
 			}
 
-			SEA_LOG("Config debug: Force=%s Readback=%u LogSoundPlay=%d LogSoundEnvironment=%d LayoutProbeCount=%u",
+			SEA_LOG("Config debug: Force=%s Readback=%u LogSoundPlay=%d LogSoundEnvironment=%d LayoutProbeCount=%u "
+					"DeferEaxSets=%d LogRouteTiming=%d",
 				forceEnvironmentName, debug.readbackCount, debug.logSoundPlay, debug.logSoundEnvironment,
-				debug.layoutProbeCount);
+				debug.layoutProbeCount, debug.deferEaxSets, debug.logRouteTiming);
 		}
 	}
 

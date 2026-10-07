@@ -47,6 +47,13 @@ namespace sea::config {
 
 		// Scan first n num of played sounds for DirectSound COM pointers.
 		std::uint32_t layoutProbeCount = 32;
+
+		// Sends the reverb and source properties of a sound as deferred sets.
+		// The last set of each sound commits all of them at one time.
+		bool deferEaxSets = true;
+
+		// Logs the time spent in the reverb routing of each sound, as a summary every 500 sounds.
+		bool logRouteTiming = false;
 	};
 
 	struct Settings {
