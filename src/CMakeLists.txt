@@ -17,19 +17,23 @@ add_library(SaintsAcoustics SHARED
 	source/config/settings.cpp
 
 	source/debug/cell_probe.cpp
+	source/debug/cover_probe.cpp
 	source/debug/eax_readback.cpp
 	source/debug/route_timing.cpp
 	source/debug/sound_probe.cpp
 
 	source/effects/mask_filter.cpp
-	source/effects/modulated_voice.cpp
+	source/effects/voice_cover.cpp
+	source/effects/voice_filter.cpp
 
 	source/engine/environment.cpp
+	source/engine/equipment.cpp
 	source/engine/objects.cpp
 	source/engine/sound_flags.cpp
 	source/engine/ui.cpp
 
 	source/hooks/sound_hooks.cpp
+	source/hooks/voice_hooks.cpp
 
 	source/input/hotkeys.cpp
 
