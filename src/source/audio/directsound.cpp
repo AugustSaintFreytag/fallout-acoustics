@@ -37,6 +37,10 @@ namespace sea::audio {
 		return true;
 	}
 
+	bool IsDsoalLoaded() {
+		return GetModuleHandleA("dsoal-aldrv.dll") != nullptr;
+	}
+
 	std::uintptr_t DSoundBegin() {
 		return DSoundRange().begin;
 	}

@@ -27,8 +27,14 @@ namespace sea::config {
 		float loops3D = -6.0f;  // Placed ambient emitters
 		float loops2D = kSendOff;
 		float region = kSendOff;  // Region one-shots and ambience
+		float radio3D = 0.0f;  // Radios placed in the world
 		float default3D = 0.0f;
 		float default2D = 0.0f;
+	};
+
+	// Filters for voices spoken through face covers (cloth masks, gas masks, power armor helmets, intercoms).
+	struct VoiceFilterSettings {
+		bool enabled = true;
 	};
 
 	struct HotkeySettings {
@@ -50,15 +56,19 @@ namespace sea::config {
 
 		// Sends the reverb and source properties of a sound as deferred sets.
 		// The last set of each sound commits all of them at one time.
-		bool deferEaxSets = true;
+		bool deferEaxSets = false;
 
 		// Logs the time spent in the reverb routing of each sound, as a summary every 500 sounds.
 		bool logRouteTiming = false;
+
+		// Logs the face cover of each speaking actor, with the worn items on its head.
+		bool logVoiceCover = true;
 	};
 
 	struct Settings {
 		ReverbSettings reverb;
 		SendSettings sends;
+		VoiceFilterSettings voiceFilters;
 		HotkeySettings hotkeys;
 		DebugSettings debug;
 	};

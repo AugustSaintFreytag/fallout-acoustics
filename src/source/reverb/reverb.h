@@ -13,6 +13,9 @@ namespace sea::reverb {
 	// Returns true if processing is active (not bypassed/disabled) after the toggle.
 	bool ToggleBypass();
 
+	// Any thread.
+	bool IsBypassed();
+
 	// Audio thread. Call before the original Play.
 	// Returns the routing label for the log.
 	const char* OnSoundPlay(void* gameSound);

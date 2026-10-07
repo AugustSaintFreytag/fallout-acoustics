@@ -9,6 +9,11 @@ namespace sea::reverb {
 
 		const config::SendSettings& sends = config::Get().sends;
 
+		// Radios placed in the world have a position. The Pip-Boy radio is plain 2D and stays excluded.
+		if ((soundFlags & kSound_Radio) && (soundFlags & (kSound_3D | kSound_2DRadius))) {
+			return {"radio3D", sends.radio3D};
+		}
+
 		if (soundFlags & (kSound_SystemSound | kSound_Music | kSound_Radio)) {
 			return {"excluded", config::kSendOff};
 		}

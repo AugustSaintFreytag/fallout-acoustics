@@ -166,6 +166,10 @@ namespace sea::reverb {
 		return !bypass;
 	}
 
+	bool IsBypassed() {
+		return g_bypass.load(std::memory_order_relaxed);
+	}
+
 	const char* OnSoundPlay(void* gameSound) {
 		if (!config::Get().reverb.enabled) {
 			return "disabled";

@@ -4,6 +4,7 @@
 #include "config/settings.h"
 #include "debug/route_timing.h"
 #include "debug/sound_probe.h"
+#include "effects/voice_filter.h"
 #include "engine/addresses.h"
 #include "reverb/reverb.h"
 #include "utils/log.h"
@@ -26,6 +27,9 @@ namespace sea::hooks {
 			const std::int64_t routeStartTime = debug::BeginRouteTiming();
 			const char* route = reverb::OnSoundPlay(sound);
 			debug::EndRouteTiming(routeStartTime);
+
+			// Filter before the original `Play` call, so that playback starts with the filtered data.
+			effects::ProcessVoiceFilter(sound);
 
 			const bool result = g_originalPlay(sound, loop);
 
