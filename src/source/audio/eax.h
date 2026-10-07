@@ -9,17 +9,14 @@ namespace sea::eax {
 	// DSOAL forwards only the EAX 1-4 property sets through IKsPropertySet.
 	// Plugin uses EAX 4.0, exposes 2 active FX slots for each source.
 
-	inline constexpr GUID kContext = {0x1D4870AD, 0x0DEF, 0x43C0, {0xA4, 0x0C, 0x52, 0x36, 0x32, 0x29, 0x63, 0x42}};
 	inline constexpr GUID kFXSlot0 = {0xC4D79F1E, 0xF1AC, 0x436B, {0xA8, 0x1D, 0xA7, 0x38, 0xE7, 0x04, 0x54, 0x69}};
 	inline constexpr GUID kSource = {0x1B86B823, 0x22DF, 0x4EAE, {0x8B, 0x3C, 0x12, 0x78, 0xCE, 0x54, 0x42, 0x27}};
-	inline constexpr GUID kReverbEffect = {0x0CF95C8F, 0xA3CC, 0x4849, {0xB0, 0xB6, 0x83, 0x2E, 0xCC, 0x18, 0x22, 0xDF}};
 	inline constexpr GUID kNull = {};
 
 	// FX slot properties
 	// Property set: kFXSlotN
 	enum : ULONG {
-		kFXSlot_LoadEffect = 0x10002,  // GUID. Fails on slots 0 and 1 (locked legacy slots).
-		kFXSlot_Volume = 0x10003,      // LONG, mB [-10000, 0]
+		kFXSlot_Volume = 0x10003,  // LONG, mB [-10000, 0]
 	};
 
 	// Reverb effect properties

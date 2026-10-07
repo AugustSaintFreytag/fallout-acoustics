@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-namespace sea::ds {
+namespace sea::audio {
 	// Pre-check function to check if an object is a DirectSound object.
 	//
 	// Checks if vtable of `address` is in dsound.dll.

@@ -10,13 +10,31 @@ set(SEA_DEPLOY_DIR "F:/Games/Tale of Two Wastelands/mods/Saint's Experimental Ac
 
 add_library(SaintsAcoustics SHARED
 	source/main.cpp
-	source/log.cpp
-	source/memory.cpp
-	source/game.cpp
-	source/probe_cell.cpp
-	source/probe_sound.cpp
-	source/dsound_util.cpp
-	source/reverb.cpp
+
+	source/audio/directsound.cpp
+	source/audio/eax_property.cpp
+
+	source/config/settings.cpp
+
+	source/debug/cell_probe.cpp
+	source/debug/eax_readback.cpp
+	source/debug/sound_probe.cpp
+
+	source/engine/environment.cpp
+	source/engine/objects.cpp
+	source/engine/sound_flags.cpp
+	source/engine/ui.cpp
+
+	source/hooks/sound_hooks.cpp
+
+	source/input/hotkeys.cpp
+
+	source/reverb/listener.cpp
+	source/reverb/reverb.cpp
+	source/reverb/routing.cpp
+
+	source/utils/log.cpp
+	source/utils/memory.cpp
 )
 
 target_include_directories(SaintsAcoustics PRIVATE include source)

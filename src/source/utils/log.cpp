@@ -1,4 +1,4 @@
-#include "log.h"
+#include "utils/log.h"
 
 #include <Windows.h>
 
@@ -22,17 +22,6 @@ namespace sea::log {
 
 		g_file = _fsopen(path, "w", _SH_DENYWR);
 		g_startTime = GetTickCount64();
-	}
-
-	void Close() {
-		std::lock_guard guard(g_lock);
-
-		if (!g_file) {
-			return;
-		}
-
-		std::fclose(g_file);
-		g_file = nullptr;
 	}
 
 	void Write(const char* format, ...) {

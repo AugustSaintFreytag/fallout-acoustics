@@ -1,7 +1,8 @@
-#include "dsound_util.h"
-#include "memory.h"
+#include "audio/directsound.h"
 
-namespace sea::ds {
+#include "utils/memory.h"
+
+namespace sea::audio {
 	namespace {
 		const mem::ModuleRange& DSoundRange() {
 			static const mem::ModuleRange range = mem::GetModuleRange("dsound.dll");

@@ -2,8 +2,7 @@
 
 namespace sea::log {
 	void Open(const char* path);
-	void Close();
-	
+
 	void Write(const char* format, ...);
 }
 
