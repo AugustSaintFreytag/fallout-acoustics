@@ -15,6 +15,9 @@ namespace sea::audio {
 
 	bool Supports(IUnknown* object, REFIID iid);
 
+	// True if DSOAL replaces DirectSound (its OpenAL driver `dsoal-aldrv.dll` is loaded).
+	bool IsDsoalLoaded();
+
 	std::uintptr_t DSoundBegin();
 	std::uintptr_t DSoundEnd();
 }

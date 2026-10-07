@@ -31,6 +31,17 @@ namespace sea::config {
 		float default2D = 0.0f;
 	};
 
+	// Filter for voices that the engine marks as `Modulated` (power armor helmets, masks, intercoms).
+	struct MaskSettings {
+		bool enabled = true;
+		float gainDb = 3.0f;  // Loudness relative to the unfiltered voice
+		float lowCutHz = 250.0f;
+		float highCutHz = 3200.0f;
+		float resonanceHz = 1000.0f;  // Air space inside the mask
+		float resonanceGainDb = 5.0f;
+		float driveDb = 3.0f;  // Speaker distortion, 0 = off
+	};
+
 	struct HotkeySettings {
 		int bypassKey = 0x23;  // Virtual-key code (VK_END), 0 = no key
 	};
@@ -50,7 +61,7 @@ namespace sea::config {
 
 		// Sends the reverb and source properties of a sound as deferred sets.
 		// The last set of each sound commits all of them at one time.
-		bool deferEaxSets = true;
+		bool deferEaxSets = false;
 
 		// Logs the time spent in the reverb routing of each sound, as a summary every 500 sounds.
 		bool logRouteTiming = false;
@@ -59,6 +70,7 @@ namespace sea::config {
 	struct Settings {
 		ReverbSettings reverb;
 		SendSettings sends;
+		MaskSettings mask;
 		HotkeySettings hotkeys;
 		DebugSettings debug;
 	};

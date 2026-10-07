@@ -21,6 +21,9 @@ add_library(SaintsAcoustics SHARED
 	source/debug/route_timing.cpp
 	source/debug/sound_probe.cpp
 
+	source/effects/mask_filter.cpp
+	source/effects/modulated_voice.cpp
+
 	source/engine/environment.cpp
 	source/engine/objects.cpp
 	source/engine/sound_flags.cpp

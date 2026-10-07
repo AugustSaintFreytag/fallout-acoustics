@@ -85,6 +85,18 @@ namespace sea::config {
 			sends.default2D = ReadFloat(iniPath, "Sends", "fDefault2D", sends.default2D);
 		}
 
+		void LoadMask(const char* iniPath) {
+			MaskSettings& mask = g_settings.mask;
+
+			mask.enabled = ReadBool(iniPath, "Mask", "bEnabled", mask.enabled);
+			mask.gainDb = ReadFloat(iniPath, "Mask", "fGain", mask.gainDb);
+			mask.lowCutHz = ReadFloat(iniPath, "Mask", "fLowCut", mask.lowCutHz);
+			mask.highCutHz = ReadFloat(iniPath, "Mask", "fHighCut", mask.highCutHz);
+			mask.resonanceHz = ReadFloat(iniPath, "Mask", "fResonanceFrequency", mask.resonanceHz);
+			mask.resonanceGainDb = ReadFloat(iniPath, "Mask", "fResonanceGain", mask.resonanceGainDb);
+			mask.driveDb = ReadFloat(iniPath, "Mask", "fDrive", mask.driveDb);
+		}
+
 		void LoadDebug(const char* iniPath) {
 			DebugSettings& debug = g_settings.debug;
 
@@ -111,6 +123,12 @@ namespace sea::config {
 				sends.voice3D, sends.voice2D, sends.weapons, sends.footsteps, sends.loops3D, sends.loops2D, sends.region,
 				sends.default3D, sends.default2D);
 
+			const MaskSettings& mask = g_settings.mask;
+
+			SEA_LOG("Config mask: Enabled=%d Gain=%.1fdB LowCut=%.0fHz HighCut=%.0fHz Resonance=%.0fHz/%.1fdB Drive=%.1fdB",
+				mask.enabled, mask.gainDb, mask.lowCutHz, mask.highCutHz, mask.resonanceHz, mask.resonanceGainDb,
+				mask.driveDb);
+
 			const char* forceEnvironmentName = "off";
 
 			if (debug.forceEnvironment) {
@@ -127,6 +145,7 @@ namespace sea::config {
 	void Load(const std::string& iniPath) {
 		LoadReverb(iniPath.c_str());
 		LoadSends(iniPath.c_str());
+		LoadMask(iniPath.c_str());
 		LoadDebug(iniPath.c_str());
 
 		SEA_LOG("Config loaded from %s.", iniPath.c_str());
