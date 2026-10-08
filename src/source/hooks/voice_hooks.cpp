@@ -10,9 +10,12 @@
 #include <cstdint>
 
 namespace sea::hooks {
+
 	namespace {
+
 		using VoiceModulationCheckFn = bool(__thiscall*)(void* actor);
 
+		// Classifies the face cover of a speaking actor and returns its sound flags. Logs it with `[Debug] bLogVoiceCover`.
 		std::uint32_t __fastcall SpeakerCoverFlags(void* actor) {
 			const effects::VoiceCover cover = effects::ClassifySpeaker(actor);
 
@@ -28,8 +31,8 @@ namespace sea::hooks {
 		std::uint32_t(__fastcall* g_speakerCoverFlags)(void* actor) = &SpeakerCoverFlags;
 
 		// Replaces `call kVoiceModulationCheck`. ecx = speaking actor.
-		// Adds the cover flags to the sound flags of the caller ([ebp-0x240]) and returns false,
-		// so that the engine does not add Modulated by itself.
+		// Adds the cover flags to the caller's sound flags ([ebp-0x240]) and returns false.
+		// The engine then does not add Modulated by itself.
 		__declspec(naked) void Hook_VoiceModulationCheck() {
 			__asm {
 				call g_speakerCoverFlags
@@ -38,8 +41,15 @@ namespace sea::hooks {
 				ret
 			}
 		}
+
 	}
 
+	// Replaces the vanilla voice modulation check in `Actor::VoiceSoundFunction` with the cover classification.
+	// Does nothing if `[VoiceFilters] bEnabled=0`. Returns false if the call site is not the expected call.
+	//
+	// Called once from `NVSEPlugin_Load` after `config::Load`.
+	//
+	// Thread: Main (load time only)
 	bool InstallVoiceHooks() {
 		if (!config::Get().voiceFilters.enabled) {
 			return true;
@@ -58,4 +68,5 @@ namespace sea::hooks {
 
 		return true;
 	}
+
 }
