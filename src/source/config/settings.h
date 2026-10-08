@@ -21,6 +21,9 @@ namespace sea::config {
 		// Volume boost added to the room level of each preset (in dB). (Max: +10.0f)
 		float roomBoost = 0.0f;
 
+		// Volume boost on the direct level of radios placed in the world (in dB). (Max: +10.0f)
+		float radioBoost = 0.0f;
+
 		std::uint32_t interiorFallback = 26;  // ANAM for an interior without an acoustic space (MediumRoom)
 		std::uint32_t exteriorFallback = 18;  // ANAM for an exterior without an acoustic space (City)
 	};
@@ -48,12 +51,15 @@ namespace sea::config {
 	struct OcclusionSettings {
 		bool enabled = false;
 
-		// High-frequency attenuation for each occluder between listener and sound, and the limit, in dB.
-		// EAX applies a quarter of it to the low frequencies (fLFRatio) and 1.5 times to the reverb send (fRoomRatio).
-		float wallLevel = 15.0f;
+		// High-frequency attenuation for each wall layer between listener and sound, and the limit, in dB.
+		// EAX applies a quarter of it to the low frequencies (fLFRatio). The reverb send gets it times fRoomRatio.
+		float wallLevel = 12.0f;
 		float maxOcclusion = 60.0f;
 		float lfRatio = 0.25f;
-		float roomRatio = 1.5f;
+		float roomRatio = 1.0f;
+
+		// Share of `fWallLevel` for a layer made of doors only, 0 to 1.
+		float doorWeight = 0.5f;
 
 		float maxDistance = 4096.0f;  // Game units. Sounds further away are not probed.
 		int rayBudget = 64;  // Casts per frame

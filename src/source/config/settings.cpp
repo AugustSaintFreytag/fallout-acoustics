@@ -5,6 +5,7 @@
 
 #include <Windows.h>
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 
@@ -103,6 +104,7 @@ namespace sea::config {
 			reverb.enabled = ReadBool(iniPath, "Reverb", "bEnabled", reverb.enabled);
 			reverb.wetLevel = ReadFloat(iniPath, "Reverb", "fWetLevel", reverb.wetLevel);
 			reverb.roomBoost = ReadFloat(iniPath, "Reverb", "fRoomBoost", reverb.roomBoost);
+			reverb.radioBoost = ReadFloat(iniPath, "Reverb", "fRadioBoost", reverb.radioBoost);
 			reverb.interiorFallback = ReadEnvironment(iniPath, "Reverb", "sInteriorFallback", reverb.interiorFallback);
 			reverb.exteriorFallback = ReadEnvironment(iniPath, "Reverb", "sExteriorFallback", reverb.exteriorFallback);
 

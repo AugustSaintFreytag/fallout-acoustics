@@ -5,14 +5,21 @@
 
 namespace sea::reverb {
 
+	// Checks if a sound is a radio placed in the world. The Pip-Boy radio plays in 2D without a radius.
+	bool IsWorldRadio(std::uint32_t soundFlags) {
+		using namespace engine;
+
+		return (soundFlags & kSound_Radio) && (soundFlags & (kSound_3D | kSound_2DRadius));
+	}
+
 	// Picks the send category of a sound from its `SoundFlag` bits.
 	Route Classify(std::uint32_t soundFlags) {
 		using namespace engine;
 
 		const config::SendSettings& sends = config::Get().sends;
 
-		// Radios placed in the world. Other radio sounds, like the Pip-Boy radio, are excluded below.
-		if ((soundFlags & kSound_Radio) && (soundFlags & (kSound_3D | kSound_2DRadius))) {
+		// Other radio sounds, like the Pip-Boy radio, are excluded below.
+		if (IsWorldRadio(soundFlags)) {
 			return {"radio3D", sends.radio3D};
 		}
 
