@@ -6,7 +6,7 @@
 
 namespace sea::config {
 
-	// Muted (in dB)
+	// Send level in dB at and below which a sound gets no FX slot.
 	constexpr float kSendOff = -100.0f; 
 
 	// Properties for global reverb handling.
@@ -68,7 +68,7 @@ namespace sea::config {
 
 	// Properties for engine behavior fixes.
 	struct FixSettings {
-		// Mute playback of 2D open/close sounds for doors and containers that are assumed to have animation-driven sounds.
+		// Mutes playback of 2D open/close sounds for doors and containers that are assumed to have animation-driven sounds.
 		bool openCloseSounds = true;
 	};
 
@@ -83,21 +83,21 @@ namespace sea::config {
 		// ANAM to force use in all locations (0 = off).
 		std::uint32_t forceEnvironment = 0;
 
-		// Log slot and source state from OpenAL Soft for first n number of routed sounds.
+		// Logs slot and source state from OpenAL Soft for the first n routed sounds.
 		std::uint32_t readbackCount = 0;
 
-		// Log all sounds played by engine.
+		// Logs all sounds played by the engine.
 		bool logSoundPlay = true;
 
-		// Log every sound environment change.
+		// Logs every sound environment change.
 		bool logSoundEnvironment = true;
 
-		// Scan first n num of played sounds for DirectSound COM pointers.
+		// Scans the first n played sounds for DirectSound COM pointers.
 		std::uint32_t layoutProbeCount = 32;
 
 		// Sends reverb and source properties of a sound as deferred sets.
 		// The last set of each sound commits all of them at one time.
-		// This is an EAX feature, not sure if without consequence.
+		// EAX feature. Side effects not verified.
 		bool deferEaxSets = false;
 
 		// Logs time spent in reverb routing for each sound. Summary printed every 500 sounds.
@@ -116,29 +116,29 @@ namespace sea::config {
 		// Maximum length of rays (in game units).
 		float rayProbeRange = 4096.0f;
 
-		// Hook `BSSoundHandle` play and position functions. Log request threads and delay until playback.
+		// Hooks `BSSoundHandle` play and position functions. Logs request threads and delay until playback.
 		bool probeSoundRequests = false;
 
-		// Hooks `BSWin32GameSound::Update`. Log threads run on, intervals and emitter positions.
+		// Hooks `BSWin32GameSound::Update`. Logs the threads it runs on, intervals and emitter positions.
 		bool probeSoundUpdate = false;
 
-		// Force override occlusion for all 3D sounds, to test which sounds get occlusion at all.
+		// Forces occlusion on all 3D sounds, to test which sounds get occlusion at all.
 		// Value is EAX occlusion in mB for all 3D sounds (0 = off). 
 		int testOcclusion = 0;
 
-		// Key to toggle occlusion sound processing.
+		// Key to toggle the test occlusion while sounds play (0 = no key).
 		int occlusionTestKey = 0;
 
-		// Log static architecture grid alignment in interior cells.
+		// Logs static architecture grid alignment in interior cells.
 		// The idea is that most Gamebryo interiors are made of chunky statics that can 
 		// make the placement of walls predictable.
 		bool probeGrid = false;
 
-		// Hooks `bhkWorld::PickObject`. Log which threads the engine uses to cast its own rays from 
+		// Hooks `bhkWorld::PickObject`. Logs which threads the engine uses to cast its own rays from 
 		// to run the "what am I looking at" check. Summary every 30 seconds.
 		bool probePickThreads = false;
 
-		// Log every occlusion targets for sounds on change, list raycasting results.
+		// Logs each change of a sound's occlusion target, with the objects the rays hit.
 		bool logOcclusion = false;
 	};
 
@@ -151,8 +151,6 @@ namespace sea::config {
 		HotkeySettings hotkeys;
 		DebugSettings debug;
 	};
-
-	// Read INI config file
 
 	void Load(const std::string& iniPath);
 

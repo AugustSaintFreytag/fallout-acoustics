@@ -34,8 +34,9 @@ namespace sea::config {
 			return value;
 		}
 
-		// Reads decimal or 0x hex values.
-		// GetPrivateProfileInt reads only decimal values.
+		// Reads an integer, decimal or `0x` hex. Returns `fallback` if the key is missing or not a number.
+		//
+		// `GetPrivateProfileInt` reads only decimal values.
 		int ReadInt(const char* iniPath, const char* section, const char* key, int fallback) {
 			char text[32];
 			GetPrivateProfileStringA(section, key, "", text, sizeof(text), iniPath);
@@ -50,7 +51,8 @@ namespace sea::config {
 			return static_cast<int>(value);
 		}
 
-		// Reads a list of collision layers, separated by commas or spaces, e.g. "37, 1, 6".
+		// Reads a list of collision layers separated by commas or spaces, such as "37, 1, 6".
+		// Returns `fallback` if the list has no layer in [1, 127].
 		std::vector<std::uint8_t> ReadLayerList(const char* iniPath, const char* section, const char* key,
 			const std::vector<std::uint8_t>& fallback) {
 			char text[128];
@@ -82,6 +84,8 @@ namespace sea::config {
 			return layers;
 		}
 
+		// Reads an environment by name, such as "MediumRoom". 
+		// Returns `fallback` if the key is missing or unknown.
 		std::uint32_t ReadEnvironment(const char* iniPath, const char* section, const char* key, std::uint32_t fallback) {
 			char text[32];
 			GetPrivateProfileStringA(section, key, "", text, sizeof(text), iniPath);
@@ -102,6 +106,7 @@ namespace sea::config {
 			reverb.interiorFallback = ReadEnvironment(iniPath, "Reverb", "sInteriorFallback", reverb.interiorFallback);
 			reverb.exteriorFallback = ReadEnvironment(iniPath, "Reverb", "sExteriorFallback", reverb.exteriorFallback);
 
+			// The reverb bypass key is in `[Reverb]`, but is stored with the other hotkeys.
 			HotkeySettings& hotkeys = g_settings.hotkeys;
 			hotkeys.bypassKey = ReadInt(iniPath, "Reverb", "iBypassKey", hotkeys.bypassKey);
 		}
@@ -231,6 +236,9 @@ namespace sea::config {
 
 	}
 
+	// Reads the INI at `iniPath` into settings and logs them. A missing key keeps the default.
+	//
+	// Thread: Main (load time only)
 	void Load(const std::string& iniPath) {
 		LoadReverb(iniPath.c_str());
 		LoadSends(iniPath.c_str());
@@ -243,6 +251,9 @@ namespace sea::config {
 		LogSettings();
 	}
 
+	// Returns settings as read by `Load`. Not changed after load.
+	//
+	// Thread: Any
 	const Settings& Get() {
 		return g_settings;
 	}
