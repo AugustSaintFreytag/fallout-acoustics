@@ -9,19 +9,21 @@
 #include <iterator>
 
 namespace sea::debug {
+
 	namespace {
 		constexpr std::uint32_t kHeadSlots = engine::kBipedSlot_Head | engine::kBipedSlot_Hair | engine::kBipedSlot_Headband
 			| engine::kBipedSlot_Hat | engine::kBipedSlot_Eyeglasses | engine::kBipedSlot_Mask | engine::kBipedSlot_MouthObject;
 
+		// Writes worn items in head slots with their slots and power armor flag to given buffer.
 		void DescribeHeadItems(void* actor, char* buffer, std::size_t size) {
-			engine::WornArmor worn[engine::kBipedAnim_SlotCount];
-			const std::size_t count = engine::GetWornArmor(actor, worn, std::size(worn));
+			engine::ArmorMap worn[engine::kBipedAnim_SlotCount];
+			const std::size_t count = engine::GetNumberOfEquippedItems(actor, worn, std::size(worn));
 
 			std::snprintf(buffer, size, " none");
 			std::size_t usedLength = 0;
 
 			for (std::size_t index = 0; index < count; ++index) {
-				const engine::WornArmor& item = worn[index];
+				const engine::ArmorMap& item = worn[index];
 
 				if (!(item.slotMask & kHeadSlots)) {
 					continue;
@@ -39,6 +41,9 @@ namespace sea::debug {
 		}
 	}
 
+	// Logs cover of a speaking actor with the vanilla decision and worn head items.
+	//
+	// Thread: Any
 	void LogVoiceCover(void* actor, effects::VoiceCover cover, bool vanillaModulated) {
 		char headItems[512];
 		DescribeHeadItems(actor, headItems, sizeof(headItems));
@@ -46,4 +51,5 @@ namespace sea::debug {
 		SEA_LOG("[Cover] %08X '%s': %s (Vanilla Modulated=%d) Head items:%s", engine::GetFormID(actor),
 			engine::GetEditorID(actor), effects::VoiceCoverName(cover), vanillaModulated, headItems);
 	}
+
 }

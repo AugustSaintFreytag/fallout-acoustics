@@ -7,13 +7,16 @@
 #include "utils/memory.h"
 
 namespace sea::debug {
+
 	using mem::Field;
 
 	namespace {
+		// Thread: Main
 		void* g_lastCell = nullptr;
 		void* g_lastSpace = nullptr;
 		void* g_lastCellSpace = nullptr;
 
+		// Logs an acoustic space with its environment type or "(none)".
 		void LogSpace(const char* label, void* space) {
 			if (!space) {
 				SEA_LOG("  %-14s (none)", label);
@@ -29,7 +32,10 @@ namespace sea::debug {
 		}
 	}
 
-	void PollPlayerAcoustics() {
+	// Logs the player's cell with the acoustic spaces of the cell and the engine.
+	//
+	// Thread: Main (each frame)
+	void PollAndLogPlayerAcoustics() {
 		void* player = engine::GetPlayer();
 
 		if (!player) {
@@ -68,9 +74,11 @@ namespace sea::debug {
 		LogSpace("Engine Cell:", cellSpace);
 	}
 
+	// Clears the last state so next poll logs again.
 	void ResetPlayerAcoustics() {
 		g_lastCell = nullptr;
 		g_lastSpace = nullptr;
 		g_lastCellSpace = nullptr;
 	}
+
 }
