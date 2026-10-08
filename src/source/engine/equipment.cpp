@@ -8,6 +8,7 @@ namespace sea::engine {
 	using mem::Field;
 
 	namespace {
+
 		// Checks if the given armor exists within the first `count` entries of the provided worn armor map.
 		bool Contains(const ArmorMap* armorMap, std::size_t count, void* armor) {
 			for (std::size_t index = 0; index < count; ++index) {
@@ -18,6 +19,7 @@ namespace sea::engine {
 
 			return false;
 		}
+
 	}
 
 	// Evaluates the given armor map and populates it with flag if worn by the supplied actor.

@@ -9,6 +9,7 @@
 namespace sea::mem {
 
 	namespace {
+
 		constexpr std::uint8_t kJumpOpcode = 0xE9;
 		constexpr std::uint8_t kNopOpcode = 0x90;
 		constexpr std::size_t kJumpSize = 5;
@@ -52,6 +53,7 @@ namespace sea::mem {
 			instruction[0] = kJumpOpcode;
 			std::memcpy(instruction + 1, &relativeTarget, sizeof(relativeTarget));
 		}
+
 	}
 
 	// Reads 4 bytes from `address` into `out`. 

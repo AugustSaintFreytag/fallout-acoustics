@@ -8,13 +8,16 @@
 #include <mutex>
 
 namespace sea::debug {
+
 	namespace {
+
 		constexpr std::uint32_t kSummaryInterval = 500;
 
 		std::mutex g_lock;
 		std::uint32_t g_sampleCount = 0;
 		std::int64_t g_totalTicks = 0;
 		std::int64_t g_maxTicks = 0;
+
 	}
 
 	// Starts timing a route. Returns start time or 0 if `[Debug] bLogRouteTiming` is off.
@@ -54,4 +57,5 @@ namespace sea::debug {
 		g_totalTicks = 0;
 		g_maxTicks = 0;
 	}
+
 }

@@ -6,10 +6,13 @@
 #include <cstdint>
 
 namespace sea::engine {
+
 	using mem::Field;
 
 	namespace {
+
 		constexpr int kMaxParentDepth = 64;
+
 	}
 
 	// Reads position and view direction (unit length) of the main camera. 
@@ -61,4 +64,5 @@ namespace sea::engine {
 
 		return nullptr;
 	}
+
 }

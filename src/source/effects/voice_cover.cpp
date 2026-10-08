@@ -9,6 +9,7 @@
 namespace sea::effects {
 
 	namespace {
+
 		// Returns the cover of one worn item, by its biped slots.
 		VoiceCover ClassifyArmor(const engine::ArmorMap& armor) {
 			if (armor.slotMask & engine::kBipedSlot_Head) {
@@ -29,6 +30,7 @@ namespace sea::effects {
 
 			return VoiceCover::None;
 		}
+
 	}
 
 	// Returns a designation for the given voice cover.

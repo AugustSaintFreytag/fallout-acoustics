@@ -24,4 +24,5 @@ namespace sea::effects {
 
 	double ApplyMaskFilter(std::int16_t* samples, std::size_t frameCount, unsigned channelCount, double sampleRate,
 		const MaskFilterPreset& preset);
+
 }

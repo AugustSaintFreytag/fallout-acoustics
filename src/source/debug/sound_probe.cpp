@@ -13,9 +13,11 @@
 #include <cstdio>
 
 namespace sea::debug {
+
 	using mem::Field;
 
 	namespace {
+
 		std::atomic<int> g_layoutProbesLeft{0};
 
 		struct InterfaceName {
@@ -106,6 +108,7 @@ namespace sea::debug {
 				Field<std::uint16_t>(sound, engine::kSound_ReverbAttenuation), DescribeBufferKind(buffer), route, sourceText,
 				&Field<char>(sound, engine::kSound_FilePath));
 		}
+
 	}
 
 	// Arms the layout probe for the first `[Debug] iLayoutProbeCount` sounds. Called once after `config::Load`.
@@ -141,4 +144,5 @@ namespace sea::debug {
 			previous, engine::EnvironmentTypeName(previous), type, engine::EnvironmentTypeName(type),
 			&Field<char>(sound, engine::kSound_FilePath));
 	}
+
 }

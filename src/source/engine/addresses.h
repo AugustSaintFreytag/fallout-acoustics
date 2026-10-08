@@ -196,4 +196,5 @@ namespace sea::engine {
 	constexpr std::uintptr_t kWin32Sound_EmitterPosition = 0x218;  // NiPoint3. GetEmitterPosition reads it for 3D and 2DRadius sounds. (EXE)
 	constexpr std::uintptr_t kWin32Sound_ProbeBegin = 0x198;  // Layout probe scans this range for DirectSound COM pointers
 	constexpr std::uintptr_t kWin32Sound_ProbeEnd = 0x230;    // Object size from JIP. ST gives 0x2E0.
+
 }

@@ -7,4 +7,5 @@ namespace sea::reverb {
 	bool IsBypassed();
 
 	const char* OnSoundPlay(void* gameSound);
+
 }

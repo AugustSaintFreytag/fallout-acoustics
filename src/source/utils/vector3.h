@@ -3,6 +3,7 @@
 #include <cmath>
 
 namespace sea {
+
 	// 3-dimensional vector type.
 	// Follows same layout as `NiPoint3` and `NiVector3` (3 float properties), compatible with engine objects.
 	struct Vector3 {
@@ -41,4 +42,5 @@ namespace sea {
 
 		return vector * (1.0f / length);
 	}
+
 }

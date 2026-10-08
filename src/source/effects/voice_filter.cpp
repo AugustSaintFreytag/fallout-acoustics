@@ -19,6 +19,7 @@ namespace sea::effects {
 	using mem::Field;
 
 	namespace {
+
 		// Light mask (cloth, face cover, surgical mask, etc.)
 		constexpr MaskFilterPreset kLightCoverPreset{
 			.lowCutFrequency = 0.0,
@@ -138,6 +139,7 @@ namespace sea::effects {
 			SEA_LOG("[Voice] Format is not supported: Tag=%u Bits=%u Channels=%u. Only 16-bit PCM is filtered.",
 				format.wFormatTag, format.wBitsPerSample, format.nChannels);
 		}
+
 	}
 
 	// Filters the buffer of a covered voice in place, with the preset of its cover. 

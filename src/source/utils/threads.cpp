@@ -5,9 +5,12 @@
 #include <atomic>
 
 namespace sea::threads {
+
 	namespace {
+
 		std::atomic<std::uint32_t> g_mainThreadId{0};
 		std::atomic<std::uint32_t> g_audioThreadId{0};
+
 	}
 
 	// Stores the calling thread as the main thread. 
@@ -46,4 +49,5 @@ namespace sea::threads {
 	std::uint32_t AudioThreadId() {
 		return g_audioThreadId.load(std::memory_order_relaxed);
 	}
+
 }

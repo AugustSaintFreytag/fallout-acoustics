@@ -9,8 +9,10 @@
 namespace sea::eax {
 
 	namespace {
+
 		// Thread: Audio
 		int g_setFailuresLogged = 0;
+
 	}
 
 	// Returns the given decibel value converted to millibels.

@@ -11,6 +11,7 @@ namespace sea::debug {
 	using mem::Field;
 
 	namespace {
+
 		// Thread: Main
 		void* g_lastCell = nullptr;
 		void* g_lastSpace = nullptr;
@@ -30,6 +31,7 @@ namespace sea::debug {
 				engine::GetEditorID(space), environment, engine::EnvironmentTypeName(environment),
 				Field<std::uint8_t>(space, engine::kAspc_IsInterior));
 		}
+
 	}
 
 	// Logs the player's cell with the acoustic spaces of the cell and the engine.

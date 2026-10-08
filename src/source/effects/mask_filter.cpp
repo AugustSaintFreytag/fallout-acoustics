@@ -9,6 +9,7 @@
 namespace sea::effects {
 
 	namespace {
+
 		constexpr double kPeakLimit = 0.97;  // Of full scale. Keeps headroom for rounding.
 		constexpr double kButterworthQ = 0.7071;
 		constexpr double kSpeakerHighCutQ = 0.9;  // Small peak before the cutoff, like a small speaker.
@@ -120,6 +121,7 @@ namespace sea::effects {
 
 			return static_cast<std::int16_t>(std::clamp(value, -32768L, 32767L));
 		}
+
 	}
 
 	// Applies preset-based audio filter for worn masks.

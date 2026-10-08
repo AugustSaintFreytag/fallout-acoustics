@@ -3,6 +3,7 @@
 #include <cstdint>
 
 namespace sea::mem {
+
 	// Returns a reference to the field at `offset` bytes into an engine object.
 	template <typename T>
 	inline T& Field(void* base, std::uintptr_t offset) {
@@ -34,4 +35,5 @@ namespace sea::mem {
 	ModuleRange GetModuleRange(const char* moduleName);
 
 	const char* ModuleNameAt(std::uintptr_t address, char* buffer, unsigned long size);
+
 }

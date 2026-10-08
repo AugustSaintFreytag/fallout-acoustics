@@ -11,6 +11,7 @@
 namespace sea::debug {
 
 	namespace {
+
 		constexpr std::uint32_t kHeadSlots = engine::kBipedSlot_Head | engine::kBipedSlot_Hair | engine::kBipedSlot_Headband
 			| engine::kBipedSlot_Hat | engine::kBipedSlot_Eyeglasses | engine::kBipedSlot_Mask | engine::kBipedSlot_MouthObject;
 
@@ -39,6 +40,7 @@ namespace sea::debug {
 				usedLength += written;
 			}
 		}
+
 	}
 
 	// Logs cover of a speaking actor with the vanilla decision and worn head items.

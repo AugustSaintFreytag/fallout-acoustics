@@ -6,6 +6,7 @@
 namespace sea::engine {
 
 	namespace {
+
 		constexpr const char* kEnvironmentNames[] = {
 			"None", "Default", "Generic", "PaddedCell", "Room", "Bathroom", "Livingroom",
 			"StoneRoom", "Auditorium", "ConcertHall", "Cave", "Arena", "Hangar",
@@ -13,6 +14,7 @@ namespace sea::engine {
 			"Mountains", "Quarry", "Plain", "ParkingLot", "SewerPipe", "Underwater",
 			"SmallRoom", "MediumRoom", "LargeRoom", "MediumHall", "LargeHall", "Plate",
 		};
+
 	}
 
 	// Returns the name of an environment type (ANAM value), such as "MediumRoom".

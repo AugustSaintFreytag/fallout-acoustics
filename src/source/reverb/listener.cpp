@@ -15,6 +15,7 @@ namespace sea::reverb {
 	using mem::Field;
 
 	namespace {
+
 		// Thread: Main (Read, Write)
 		// Thread: Audio (Read)
 		std::atomic<std::uint32_t> g_listenerEnvironment{0};  // ANAM, 0 = unknown
@@ -22,6 +23,7 @@ namespace sea::reverb {
 		// Thread: Main
 		std::uint32_t g_lastLoggedEnvironment = 0;
 		void* g_lastLoggedSpace = nullptr;
+
 	}
 
 	// Evaluates the player's current environment.

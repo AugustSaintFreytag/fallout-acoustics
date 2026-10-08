@@ -10,6 +10,7 @@
 namespace sea::debug {
 
 	namespace {
+
 		// Thread: Audio
 		std::uint32_t g_sourceReadbacksDone = 0;
 
@@ -24,6 +25,7 @@ namespace sea::debug {
 
 			return "other";
 		}
+
 	}
 
 	// Logs what OpenAL Soft holds for FX slot 0 if `[Debug] iReadbackCount` is set.

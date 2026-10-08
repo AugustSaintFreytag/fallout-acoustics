@@ -4,14 +4,17 @@
 #include "utils/memory.h"
 
 namespace sea::engine {
+
 	using mem::Field;
 
 	namespace {
+
 		const mem::ModuleRange& ExeRange() {
 			static const mem::ModuleRange range = mem::GetModuleRange(nullptr);
 
 			return range;
 		}
+
 	}
 
 	void* GetPlayer() {
@@ -257,4 +260,5 @@ namespace sea::engine {
 
 		return form;
 	}
+
 }

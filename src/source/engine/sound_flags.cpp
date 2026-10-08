@@ -5,6 +5,7 @@
 namespace sea::engine {
 
 	namespace {
+
 		struct FlagName {
 			std::uint32_t bit;
 			const char* name;
@@ -45,6 +46,7 @@ namespace sea::engine {
 
 			return "|";
 		}
+
 	}
 
 	// Writes the names of the set flags, joined by `|`, into `buffer`, for debugging.

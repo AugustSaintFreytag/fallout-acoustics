@@ -5,11 +5,13 @@
 namespace sea::audio {
 
 	namespace {
+
 		const mem::ModuleRange& DSoundRange() {
 			static const mem::ModuleRange range = mem::GetModuleRange("dsound.dll");
 
 			return range;
 		}
+
 	}
 
 	// Checks if given address holds a DirectSound object. Its vtable must lie in `dsound.dll`.

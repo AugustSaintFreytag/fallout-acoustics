@@ -17,6 +17,7 @@ namespace sea::engine {
 	using mem::Field;
 
 	namespace {
+
 		// Pick data collection used for a Havok physics engine ray (like `bhkPickData`). 
 		// Unnamed fields are set as JIP's `_GetRayCastObject` sets them.
 
@@ -138,6 +139,7 @@ namespace sea::engine {
 
 			return 0;
 		}
+
 	}
 
 	// Checks if raycasting runs on the calling thread. 

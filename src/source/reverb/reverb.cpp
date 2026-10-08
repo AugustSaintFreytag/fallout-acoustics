@@ -23,6 +23,7 @@ namespace sea::reverb {
 	using mem::Field;
 
 	namespace {
+
 		// Thread: Main (Read, Write)
 		// Thread: Audio (Read)
 		std::atomic<bool> g_bypass{false};
@@ -169,6 +170,7 @@ namespace sea::reverb {
 
 			return true;
 		}
+
 	}
 
 	// Toggles the bypass for reverb processed audio in the final mix. Effectively mutes "wet" output.

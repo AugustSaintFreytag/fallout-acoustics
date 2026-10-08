@@ -9,9 +9,11 @@
 namespace sea::log {
 
 	namespace {
+
 		std::mutex g_lock;
 		std::FILE* g_file = nullptr;
 		ULONGLONG g_startTime = 0;
+
 	}
 
 	// Opens the log file at `path` and overwrites it. 

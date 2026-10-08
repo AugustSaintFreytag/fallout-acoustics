@@ -12,6 +12,7 @@
 namespace sea::input {
 
 	namespace {
+
 		// Thread: Main
 		bool g_bypassKeyWasDown = false;
 		bool g_rayProbeKeyWasDown = false;
@@ -111,6 +112,7 @@ namespace sea::input {
 				engine::ShowNotification("Occlusion: OFF");
 			}
 		}
+
 	}
 
 	// Polls the hotkeys and runs the action of each key that went down. Only while the game window has focus.

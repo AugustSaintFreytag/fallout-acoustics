@@ -4,5 +4,5 @@ namespace sea::debug {
 
 	void PollAndLogPlayerAcoustics();
 	void ResetPlayerAcoustics();
-	
+
 }
