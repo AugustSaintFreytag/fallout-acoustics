@@ -1,3 +1,5 @@
-engine
-reference
-tools
+.vscode
+
+/engine
+/reference
+/tools
