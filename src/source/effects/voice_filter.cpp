@@ -148,7 +148,7 @@ namespace sea::effects {
 	//
 	// Thread: Audio
 	void ProcessVoiceFilter(void* gameSound) {
-		if (!config::Get().voiceFilters.enabled || reverb::IsBypassed() || !audio::IsDsoalLoaded()) {
+		if (!config::Get().voiceFilters.enabled || reverb::IsBypassed() || !audio::IsDSOALLoaded()) {
 			return;
 		}
 
