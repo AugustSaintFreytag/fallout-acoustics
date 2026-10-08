@@ -7,12 +7,14 @@
 #include <cstdint>
 
 namespace sea::audio {
+
 	bool IsDSoundObject(std::uint32_t address);
 
 	bool Supports(IUnknown* object, REFIID iid);
 
-	bool IsDsoalLoaded();
+	bool IsDSOALLoaded();
 
 	std::uintptr_t DSoundBegin();
 	std::uintptr_t DSoundEnd();
+
 }

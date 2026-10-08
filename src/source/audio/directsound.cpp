@@ -3,6 +3,7 @@
 #include "utils/memory.h"
 
 namespace sea::audio {
+
 	namespace {
 		const mem::ModuleRange& DSoundRange() {
 			static const mem::ModuleRange range = mem::GetModuleRange("dsound.dll");
@@ -41,7 +42,7 @@ namespace sea::audio {
 	}
 
 	// Checks if DSOAL replaces DirectSound by looking for its OpenAL driver `dsoal-aldrv.dll`.
-	bool IsDsoalLoaded() {
+	bool IsDSOALLoaded() {
 		return GetModuleHandleA("dsoal-aldrv.dll") != nullptr;
 	}
 
@@ -53,4 +54,5 @@ namespace sea::audio {
 	std::uintptr_t DSoundEnd() {
 		return DSoundRange().end;
 	}
+
 }
