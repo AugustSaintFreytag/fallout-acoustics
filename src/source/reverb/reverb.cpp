@@ -87,6 +87,21 @@ namespace sea::reverb {
 			return true;
 		}
 
+		// Raises the direct level of a radio placed in the world by `[Reverb] fRadioBoost`.
+		// The set is deferred if `[Debug] bDeferEaxSets` is on. The last set in `ApplySource` commits it.
+		void ApplyRadioBoost(IKsPropertySet* propertySet, std::uint32_t soundFlags) {
+			const float boost = config::Get().reverb.radioBoost;
+
+			if (boost <= 0.0f || !IsWorldRadio(soundFlags)) {
+				return;
+			}
+
+			// OpenAL Soft lets the direct level go above 0 dB, up to +10 dB.
+			// Reference at "al/source.cpp", "eax_create_direct_filter_param".
+			const LONG direct = std::min(static_cast<LONG>(std::lround(boost * 100.0f)), eax::kMaxDirect);
+			eax::SetProperty(propertySet, eax::kSource, Deferred(eax::kSource_Direct), &direct, sizeof(direct), "radio boost");
+		}
+
 		// Sets the primary FX slot volume to the configured wet level or to silent while bypassed. 
 		// Bails if volume is unchanged.
 		void ApplyVolume(IKsPropertySet* propertySet) {
@@ -233,8 +248,10 @@ namespace sea::reverb {
 
 		const bool environmentChanged = ApplySlot(propertySet);
 
-		const Route route = Classify(Field<std::uint32_t>(gameSound, engine::kSound_TypeFlags));
+		const std::uint32_t soundFlags = Field<std::uint32_t>(gameSound, engine::kSound_TypeFlags);
+		const Route route = Classify(soundFlags);
 		const bool keepSlot = config::Get().occlusion.enabled && occlusion::HasPosition(gameSound);
+		ApplyRadioBoost(propertySet, soundFlags);
 		ApplySource(propertySet, route, keepSlot);
 
 		// Read back after ApplySource so deferred values can be committed.

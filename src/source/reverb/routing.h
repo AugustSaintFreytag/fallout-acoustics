@@ -13,6 +13,8 @@ namespace sea::reverb {
 		float sendLevel;
 	};
 
+	bool IsWorldRadio(std::uint32_t soundFlags);
+
 	Route Classify(std::uint32_t soundFlags);
 
 }
