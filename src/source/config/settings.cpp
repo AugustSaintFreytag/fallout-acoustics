@@ -140,6 +140,7 @@ namespace sea::config {
 			occlusion.maxOcclusion = ReadFloat(iniPath, "Occlusion", "fMaxOcclusion", occlusion.maxOcclusion);
 			occlusion.lfRatio = ReadFloat(iniPath, "Occlusion", "fLFRatio", occlusion.lfRatio);
 			occlusion.roomRatio = ReadFloat(iniPath, "Occlusion", "fRoomRatio", occlusion.roomRatio);
+			occlusion.doorWeight = std::clamp(ReadFloat(iniPath, "Occlusion", "fDoorWeight", occlusion.doorWeight), 0.0f, 1.0f);
 			occlusion.maxDistance = ReadFloat(iniPath, "Occlusion", "fMaxDistance", occlusion.maxDistance);
 			occlusion.rayBudget = ReadInt(iniPath, "Occlusion", "iRayBudget", occlusion.rayBudget);
 			occlusion.refreshInterval = ReadFloat(iniPath, "Occlusion", "fRefreshInterval", occlusion.refreshInterval);
@@ -183,8 +184,9 @@ namespace sea::config {
 			const SendSettings& sends = g_settings.sends;
 			const DebugSettings& debug = g_settings.debug;
 
-			SEA_LOG("Config reverb: Enabled=%d Wet=%.1fdB RoomBoost=%.1fdB InteriorFallback=%s ExteriorFallback=%s BypassKey=0x%X",
-				reverb.enabled, reverb.wetLevel, reverb.roomBoost, engine::EnvironmentTypeName(reverb.interiorFallback),
+			SEA_LOG("Config reverb: Enabled=%d Wet=%.1fdB RoomBoost=%.1fdB RadioBoost=%.1fdB InteriorFallback=%s "
+					"ExteriorFallback=%s BypassKey=0x%X",
+				reverb.enabled, reverb.wetLevel, reverb.roomBoost, reverb.radioBoost, engine::EnvironmentTypeName(reverb.interiorFallback),
 				engine::EnvironmentTypeName(reverb.exteriorFallback), g_settings.hotkeys.bypassKey);
 
 			SEA_LOG("Config sends (dB): Voice3D=%.1f Voice2D=%.1f Weapons=%.1f Footsteps=%.1f Loops3D=%.1f Loops2D=%.1f "
@@ -198,10 +200,10 @@ namespace sea::config {
 
 			const OcclusionSettings& occlusion = g_settings.occlusion;
 
-			SEA_LOG("Config occlusion: Enabled=%d Wall=%.1fdB Max=%.1fdB LFRatio=%.2f RoomRatio=%.2f MaxDistance=%.0f "
-					"RayBudget=%d Refresh=%.2fs Attack=%.2fs Release=%.2fs BypassKey=0x%X",
+			SEA_LOG("Config occlusion: Enabled=%d Wall=%.1fdB Max=%.1fdB LFRatio=%.2f RoomRatio=%.2f DoorWeight=%.2f "
+					"MaxDistance=%.0f RayBudget=%d Refresh=%.2fs Attack=%.2fs Release=%.2fs BypassKey=0x%X",
 				occlusion.enabled, occlusion.wallLevel, occlusion.maxOcclusion, occlusion.lfRatio, occlusion.roomRatio,
-				occlusion.maxDistance, occlusion.rayBudget, occlusion.refreshInterval, occlusion.attackTime,
+				occlusion.doorWeight,				occlusion.maxDistance, occlusion.rayBudget, occlusion.refreshInterval, occlusion.attackTime,
 				occlusion.releaseTime, occlusion.bypassKey);
 
 			const char* forceEnvironmentName = "off";

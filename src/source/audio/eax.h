@@ -35,6 +35,7 @@ namespace sea::eax {
 	enum : ULONG {
 		kSource_ObstructionParameters = 2,  // ObstructionProperties
 		kSource_OcclusionParameters = 3,  // OcclusionProperties
+		kSource_Direct = 5,  // LONG, mB, [-10000, 1000]
 		kSource_SendParameters = 23,  // SourceSendProperties[]
 		kSource_ActiveFXSlotID = 27,  // ActiveFXSlots
 	};
@@ -48,6 +49,7 @@ namespace sea::eax {
 	inline constexpr float kDefaultOcclusionDirectRatio = 1.0f;
 
 	inline constexpr LONG kMinLevel = -10000;  // mB, silence
+	inline constexpr LONG kMaxDirect = 1000;  // mB
 
 	struct Vector {
 		float x, y, z;

@@ -37,10 +37,11 @@ namespace sea::occlusion {
 		// Thread: Main
 		std::unordered_map<std::uint32_t, ProbeState> g_probeStates;
 
-		// Returns occlusion target in mB for a number of occluders. Each counts `fWallLevel` up to `fMaxOcclusion`.
-		std::int32_t TargetForOccluders(int occluders) {
+		// Returns occlusion target in mB for a sum of layer weights. A weight of 1 counts `fWallLevel`.
+		// Limited to `fMaxOcclusion`.
+		std::int32_t TargetForWeight(float weight) {
 			const config::OcclusionSettings& settings = config::Get().occlusion;
-			const float levelDb = std::min(settings.wallLevel * static_cast<float>(occluders), settings.maxOcclusion);
+			const float levelDb = std::min(settings.wallLevel * weight, settings.maxOcclusion);
 
 			return -static_cast<std::int32_t>(std::lround(levelDb * 100.0f));
 		}
@@ -51,8 +52,8 @@ namespace sea::occlusion {
 				return;
 			}
 
-			SEA_LOG("[Occlusion] ID=%u %d -> %d mB, %d occluder(s) [%s], %d casts, distance %.0f, Path=\"%.120s\"",
-				sound.soundId, previousMb, targetMb, result.occluders, result.description, result.casts, distance,
+			SEA_LOG("[Occlusion] ID=%u %d -> %d mB, %d layer(s) [%s], %d casts, distance %.0f, Path=\"%.120s\"",
+				sound.soundId, previousMb, targetMb, result.layers, result.description, result.casts, distance,
 				GetPath(sound.soundId).c_str());
 		}
 
@@ -129,7 +130,7 @@ namespace sea::occlusion {
 				castsLeft -= result.casts;
 			}
 
-			const std::int32_t targetMb = TargetForOccluders(result.occluders);
+			const std::int32_t targetMb = TargetForWeight(result.weight);
 			const std::int32_t previousMb = state.targetMb;
 
 			state.lastProbeTime = now;

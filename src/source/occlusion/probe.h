@@ -10,9 +10,10 @@ namespace sea::occlusion {
 	constexpr int kMaxCastsPerProbe = 14;
 
 	struct ProbeResult {
-		int occluders = 0;  // Distinct objects between listener and sound (terrain counts once)
+		int layers = 0;  // Physical layers between listener and sound (terrain counts once)
+		float weight = 0.0f;  // Sum of layer weights, 1 for a wall
 		int casts = 0;
-		char description[192] = "";  // Editor IDs of the first occluders, for the log
+		char description[256] = "";  // Editor IDs and distances of the first layers, for the log
 	};
 
 	ProbeResult ProbeOcclusion(const Vector3& listener, const Vector3& source);
