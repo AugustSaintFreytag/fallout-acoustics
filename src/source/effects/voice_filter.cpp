@@ -15,57 +15,59 @@
 #include <unordered_map>
 
 namespace sea::effects {
+
 	using mem::Field;
 
 	namespace {
-		// Cloth: the fabric absorbs some of the high frequencies, nothing more.
+		// Light mask (cloth, face cover, surgical mask, etc.)
 		constexpr MaskFilterPreset kLightCoverPreset{
-			.lowCutHz = 0.0,
-			.resonanceHz = 0.0,
-			.resonanceGainDb = 0.0,
-			.presenceHz = 0.0,
-			.presenceGainDb = 0.0,
-			.highCutHz = 4000.0,
+			.lowCutFrequency = 0.0,
+			.highCutFrequency = 4000.0,
+			.resonanceFrequency = 0.0,
+			.resonanceGainLevel = 0.0,
+			.presenceFrequency = 0.0,
+			.presenceGainLevel = 0.0,
 			.steepHighCut = false,
-			.driveDb = 0.0,
-			.gainDb = 1.0,
+			.driveLevel = 0.0,
+			.gainLevel = 1.0,
 		};
 
-		// Gas mask: a rubber cavity with a low, boxy resonance and strong muffling.
-		// The small presence peak keeps the words understandable.
+		// Heavy mask, full head cover (gas mask, closed helmet, etc.)
 		constexpr MaskFilterPreset kFullCoverPreset{
-			.lowCutHz = 180.0,
-			.resonanceHz = 650.0,
-			.resonanceGainDb = 6.0,
-			.presenceHz = 1500.0,
-			.presenceGainDb = 2.0,
-			.highCutHz = 2300.0,
+			.lowCutFrequency = 180.0,
+			.highCutFrequency = 2300.0,
+			.resonanceFrequency = 650.0,
+			.resonanceGainLevel = 6.0,
+			.presenceFrequency = 1500.0,
+			.presenceGainLevel = 2.0,
 			.steepHighCut = true,
-			.driveDb = 0.0,
-			.gainDb = 3.0,
+			.driveLevel = 0.0,
+			.gainLevel = 3.0,
 		};
 
-		// Small helmet speaker or intercom: thin, a cone peak, band limited, slightly driven.
+		// Electric speaker (power armor helmet, intercom, etc.)
 		constexpr MaskFilterPreset kSpeakerPreset{
-			.lowCutHz = 350.0,
-			.resonanceHz = 1000.0,
-			.resonanceGainDb = 4.0,
-			.presenceHz = 2500.0,
-			.presenceGainDb = 3.0,
-			.highCutHz = 3400.0,
+			.lowCutFrequency = 350.0,
+			.highCutFrequency = 3400.0,
+			.resonanceFrequency = 1000.0,
+			.resonanceGainLevel = 4.0,
+			.presenceFrequency = 2500.0,
+			.presenceGainLevel = 3.0,
 			.steepHighCut = true,
-			.driveDb = 6.0,
-			.gainDb = 1.0,
+			.driveLevel = 6.0,
+			.gainLevel = 1.0,
 		};
 
 		constexpr std::size_t kMaxTrackedBuffers = 512;
 
 		// Content hash of each buffer after filtering.
-		// The same hash at the next Play means that the engine did not write new data, so the buffer is already filtered.
+		// The same hash at the next Play means that the engine did not write new data, 
+		// so buffer can be assumed to already be filtered.
 		std::mutex g_lock;
 		std::unordered_map<std::uint32_t, std::uint64_t> g_filteredContent;
 
-		bool g_unsupportedFormatLogged = false;  // Audio thread only.
+		// Thread: Audio
+		bool g_unsupportedFormatLogged = false;
 
 		const MaskFilterPreset* PresetFor(VoiceCover cover) {
 			switch (cover) {
@@ -83,7 +85,7 @@ namespace sea::effects {
 			}
 		}
 
-		// FNV-1a, 64 bit.
+		// Returns the FNV-1a hash (64 bit) of a block of memory.
 		std::uint64_t HashContent(const void* data, std::size_t size) {
 			const auto* bytes = static_cast<const std::uint8_t*>(data);
 			std::uint64_t hash = 0xCBF29CE484222325ull;
@@ -118,6 +120,7 @@ namespace sea::effects {
 			g_filteredContent[buffer] = contentHash;
 		}
 
+		// Checks if the format is 16-bit PCM with packed samples.
 		bool IsSupportedFormat(const WAVEFORMATEX& format) {
 			if (format.wFormatTag != WAVE_FORMAT_PCM || format.wBitsPerSample != 16 || format.nChannels == 0) {
 				return false;
@@ -137,6 +140,11 @@ namespace sea::effects {
 		}
 	}
 
+	// Filters the buffer of a covered voice in place, with the preset of its cover. 
+	// Called before the original `Play`.
+	// DSOAL only: native DirectSound applies the vanilla effect.
+	//
+	// Thread: Audio
 	void ProcessVoiceFilter(void* gameSound) {
 		if (!config::Get().voiceFilters.enabled || reverb::IsBypassed() || !audio::IsDsoalLoaded()) {
 			return;
@@ -180,6 +188,7 @@ namespace sea::effects {
 			return;
 		}
 
+		// Engine reuses buffers. Filter only if the content changed since the last filter.
 		if (IsAlreadyFiltered(bufferAddress, HashContent(audio, audioBytes))) {
 			buffer->Unlock(audio, audioBytes, wrappedAudio, wrappedBytes);
 
@@ -199,4 +208,5 @@ namespace sea::effects {
 			VoiceCoverName(cover), format.nSamplesPerSec, format.nChannels, durationSeconds, gainDb,
 			&Field<char>(gameSound, engine::kSound_FilePath));
 	}
+
 }

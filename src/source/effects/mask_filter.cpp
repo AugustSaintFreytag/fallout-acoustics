@@ -7,6 +7,7 @@
 #include <vector>
 
 namespace sea::effects {
+
 	namespace {
 		constexpr double kPeakLimit = 0.97;  // Of full scale. Keeps headroom for rounding.
 		constexpr double kButterworthQ = 0.7071;
@@ -42,7 +43,9 @@ namespace sea::effects {
 			return peak;
 		}
 
-		// A default Biquad passes the signal unchanged, so stages that are off cost little.
+		// An effects chain of configured audio filters.
+		//
+		// A default `Biquad` filter doesn't change the signal.
 		struct FilterChain {
 			Biquad lowCut;
 			Biquad resonance;
@@ -60,25 +63,26 @@ namespace sea::effects {
 			}
 		};
 
+		// Builds the filter stages of the given preset for the supplied sample rate.
 		FilterChain MakeFilterChain(double sampleRate, const MaskFilterPreset& preset) {
 			// Keeps all frequencies well below Nyquist. Voice buffers can be 22 or 24 kHz.
 			const double frequencyLimit = sampleRate * 0.45;
-			const double highCut = std::min(preset.highCutHz, frequencyLimit);
+			const double highCut = std::min(preset.highCutFrequency, frequencyLimit);
 
 			FilterChain chain;
 
-			if (preset.lowCutHz > 0.0) {
-				chain.lowCut = Biquad::HighPass(sampleRate, std::min(preset.lowCutHz, highCut * 0.5), kButterworthQ);
+			if (preset.lowCutFrequency > 0.0) {
+				chain.lowCut = Biquad::HighPass(sampleRate, std::min(preset.lowCutFrequency, highCut * 0.5), kButterworthQ);
 			}
 
-			if (preset.resonanceGainDb != 0.0) {
-				const double resonance = std::min(preset.resonanceHz, frequencyLimit);
-				chain.resonance = Biquad::Peaking(sampleRate, resonance, kResonanceQ, preset.resonanceGainDb);
+			if (preset.resonanceGainLevel != 0.0) {
+				const double resonance = std::min(preset.resonanceFrequency, frequencyLimit);
+				chain.resonance = Biquad::Peaking(sampleRate, resonance, kResonanceQ, preset.resonanceGainLevel);
 			}
 
-			if (preset.presenceGainDb != 0.0) {
-				const double presence = std::min(preset.presenceHz, frequencyLimit);
-				chain.presence = Biquad::Peaking(sampleRate, presence, kPresenceQ, preset.presenceGainDb);
+			if (preset.presenceGainLevel != 0.0) {
+				const double presence = std::min(preset.presenceFrequency, frequencyLimit);
+				chain.presence = Biquad::Peaking(sampleRate, presence, kPresenceQ, preset.presenceGainLevel);
 			}
 
 			if (preset.steepHighCut) {
@@ -91,7 +95,7 @@ namespace sea::effects {
 			return chain;
 		}
 
-		// Soft clipping (tanh), scaled so that the peak level stays the same.
+		// Applies soft clipping (tanh) to the signal. Scaled to keep the peak level.
 		void Saturate(std::vector<double>& signal, double driveDb) {
 			if (driveDb <= 0.0) {
 				return;
@@ -118,6 +122,12 @@ namespace sea::effects {
 		}
 	}
 
+	// Applies preset-based audio filter for worn masks.
+	// Returns the gain applied after the filters, in dB.
+
+	// Filter applied to interleaved 16-bit PCM. 
+	// Applies low cut, resonance, presence, high cut, and distortion.
+	// Compensates for loudness plus applied gain from selected preset.
 	double ApplyMaskFilter(std::int16_t* samples, std::size_t frameCount, unsigned channelCount, double sampleRate,
 		const MaskFilterPreset& preset) {
 		double appliedGainDb = 0.0;
@@ -128,6 +138,7 @@ namespace sea::effects {
 
 		std::vector<double> signal(frameCount);
 
+		// Each channel is filtered on its own and keeps its own loudness.
 		for (unsigned channel = 0; channel < channelCount; ++channel) {
 			for (std::size_t frame = 0; frame < frameCount; ++frame) {
 				signal[frame] = samples[frame * channelCount + channel] / 32768.0;
@@ -145,7 +156,7 @@ namespace sea::effects {
 				sample = chain.Process(sample);
 			}
 
-			Saturate(signal, preset.driveDb);
+			Saturate(signal, preset.driveLevel);
 
 			const double outputLevel = RootMeanSquare(signal);
 
@@ -153,7 +164,8 @@ namespace sea::effects {
 				continue;
 			}
 
-			double gain = inputLevel / outputLevel * DecibelsToGain(preset.gainDb);
+			// Match the input loudness plus `gainDb`, then lower the gain where the peak would clip.
+			double gain = inputLevel / outputLevel * DecibelsToGain(preset.gainLevel);
 			const double peak = Peak(signal) * gain;
 
 			if (peak > kPeakLimit) {
@@ -169,4 +181,5 @@ namespace sea::effects {
 
 		return appliedGainDb;
 	}
+
 }

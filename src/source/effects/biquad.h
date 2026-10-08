@@ -4,7 +4,9 @@
 #include <numbers>
 
 namespace sea::effects {
-	// Second-order IIR filter. Coefficients from the RBJ Audio EQ Cookbook.
+
+	// Second-Order IIR Filter
+	// Coefficients yoinked from the RBJ Audio EQ Cookbook.
 	struct Biquad {
 		double b0 = 1.0;
 		double b1 = 0.0;
@@ -37,7 +39,7 @@ namespace sea::effects {
 				1.0 + shape.alpha / amplitude, -2.0 * shape.cosine, 1.0 - shape.alpha / amplitude);
 		}
 
-		// Transposed direct form II.
+		// Filters one sample. Transposed direct form II.
 		double Process(double input) {
 			const double output = b0 * input + state1;
 			state1 = b1 * input - a1 * output + state2;
@@ -47,6 +49,7 @@ namespace sea::effects {
 		}
 
 	private:
+	
 		struct Shape {
 			double cosine;
 			double alpha;
@@ -70,4 +73,5 @@ namespace sea::effects {
 			return filter;
 		}
 	};
+
 }
