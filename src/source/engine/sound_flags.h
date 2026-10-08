@@ -4,6 +4,7 @@
 #include <cstdint>
 
 namespace sea::engine {
+
 	enum SoundFlag : std::uint32_t {  // (JG BSGameSound::TypeFlags)
 		kSound_2D = 1u << 0,
 		kSound_3D = 1u << 1,
@@ -33,4 +34,5 @@ namespace sea::engine {
 	};
 
 	void DescribeSoundFlags(std::uint32_t flags, char* buffer, std::size_t size);
+
 }

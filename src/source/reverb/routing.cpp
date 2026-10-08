@@ -4,12 +4,14 @@
 #include "engine/sound_flags.h"
 
 namespace sea::reverb {
+
+	// Picks the send category of a sound from its `SoundFlag` bits.
 	Route Classify(std::uint32_t soundFlags) {
 		using namespace engine;
 
 		const config::SendSettings& sends = config::Get().sends;
 
-		// Radios placed in the world have a position. The Pip-Boy radio is plain 2D and stays excluded.
+		// Radios placed in the world. Other radio sounds, like the Pip-Boy radio, are excluded below.
 		if ((soundFlags & kSound_Radio) && (soundFlags & (kSound_3D | kSound_2DRadius))) {
 			return {"radio3D", sends.radio3D};
 		}
@@ -54,4 +56,5 @@ namespace sea::reverb {
 
 		return {"default3D", sends.default3D};
 	}
+
 }

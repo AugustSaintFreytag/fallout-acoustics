@@ -3,11 +3,16 @@
 #include <cstdint>
 
 namespace sea::reverb {
+
+	// A sound routing into the reverb, as picked for each sound by its category.
 	struct Route {
+		// Name of the route for identification and logging
 		const char* label;
-		float sendDb;
+
+		// Level to send audio with (in dB)
+		float sendLevel;
 	};
 
-	// Selects the send category from the SoundFlag bits of a sound.
 	Route Classify(std::uint32_t soundFlags);
+
 }

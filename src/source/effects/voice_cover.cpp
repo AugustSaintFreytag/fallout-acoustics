@@ -7,8 +7,11 @@
 #include <iterator>
 
 namespace sea::effects {
+
 	namespace {
-		VoiceCover ClassifyArmor(const engine::WornArmor& armor) {
+
+		// Returns the cover of one worn item, by its biped slots.
+		VoiceCover ClassifyArmor(const engine::ArmorMap& armor) {
 			if (armor.slotMask & engine::kBipedSlot_Head) {
 				if (armor.isPowerArmor) {
 					return VoiceCover::Speaker;
@@ -27,8 +30,10 @@ namespace sea::effects {
 
 			return VoiceCover::None;
 		}
+
 	}
 
+	// Returns a designation for the given voice cover.
 	const char* VoiceCoverName(VoiceCover cover) {
 		switch (cover) {
 		case VoiceCover::Light:
@@ -45,9 +50,11 @@ namespace sea::effects {
 		}
 	}
 
+	// Returns the cover of a speaking actor, from its worn armor. The item with the most cover counts:
+	// Head slot = Speaker with the power armor flag, else Full. Mask and Hair slots = Full. Mask slot only = Light.
 	VoiceCover ClassifySpeaker(void* actor) {
-		engine::WornArmor worn[engine::kBipedAnim_SlotCount];
-		const std::size_t count = engine::GetWornArmor(actor, worn, std::size(worn));
+		engine::ArmorMap worn[engine::kBipedAnim_SlotCount];
+		const std::size_t count = engine::GetNumberOfEquippedItems(actor, worn, std::size(worn));
 
 		VoiceCover cover = VoiceCover::None;
 
@@ -62,6 +69,7 @@ namespace sea::effects {
 		return cover;
 	}
 
+	// Returns the sound flags that tag a voice with its cover. Speaker uses the engine's own `Modulated` flag.
 	std::uint32_t VoiceCoverFlags(VoiceCover cover) {
 		switch (cover) {
 		case VoiceCover::Light:
@@ -78,6 +86,7 @@ namespace sea::effects {
 		}
 	}
 
+	// Returns the cover of a voice from its sound flags. `Modulated` set by the engine (for example, intercoms) is Speaker.
 	VoiceCover VoiceCoverFromFlags(std::uint32_t soundFlags) {
 		if (soundFlags & engine::kSound_Modulated) {
 			return VoiceCover::Speaker;
@@ -93,4 +102,5 @@ namespace sea::effects {
 
 		return VoiceCover::None;
 	}
+
 }

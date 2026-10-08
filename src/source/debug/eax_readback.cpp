@@ -8,8 +8,11 @@
 #include <cstdint>
 
 namespace sea::debug {
+
 	namespace {
-		std::uint32_t g_sourceReadbacksDone = 0;  // Audio thread only.
+
+		// Thread: Audio
+		std::uint32_t g_sourceReadbacksDone = 0;
 
 		const char* SlotName(const GUID& slotId) {
 			if (slotId == eax::kNull) {
@@ -22,8 +25,12 @@ namespace sea::debug {
 
 			return "other";
 		}
+
 	}
 
+	// Logs what OpenAL Soft holds for FX slot 0 if `[Debug] iReadbackCount` is set.
+	//
+	// Thread: Audio
 	void ReadBackSlot(IKsPropertySet* propertySet) {
 		if (config::Get().debug.readbackCount == 0) {
 			return;
@@ -45,6 +52,9 @@ namespace sea::debug {
 			reverb.reflections, reverb.reverb);
 	}
 
+	// Logs active slots and slot 0 send of the first `iReadbackCount` routed sounds.
+	//
+	// Thread: Audio
 	void ReadBackSource(IKsPropertySet* propertySet, const char* label) {
 		if (g_sourceReadbacksDone >= config::Get().debug.readbackCount) {
 			return;
@@ -66,4 +76,5 @@ namespace sea::debug {
 		SEA_LOG("[Readback] Source (%s): Active {%s, %s}, Send[0] %s %ld mB", label, SlotName(slots.slots[0]),
 			SlotName(slots.slots[1]), SlotName(sends[0].receivingFXSlotID), sends[0].send);
 	}
+
 }

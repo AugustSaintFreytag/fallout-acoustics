@@ -13,9 +13,11 @@
 #include <cstdio>
 
 namespace sea::debug {
+
 	using mem::Field;
 
 	namespace {
+
 		std::atomic<int> g_layoutProbesLeft{0};
 
 		struct InterfaceName {
@@ -31,6 +33,7 @@ namespace sea::debug {
 			{&IID_IKsPropertySet, "KsPropertySet"},
 		};
 
+		// Writes names of DirectSound interfaces the given object supports to given buffer.
 		void DescribeDSoundObject(IUnknown* object, char* buffer, std::size_t size) {
 			buffer[0] = '\0';
 
@@ -51,6 +54,7 @@ namespace sea::debug {
 			}
 		}
 
+		// Logs each DirectSound object in a sound's infrastructure fields with its supported interfaces.
 		void ProbeLayout(void* sound) {
 			SEA_LOG("[Layout] Sound %p: DirectSound objects in +%03X..+%03X", sound,
 				static_cast<unsigned>(engine::kWin32Sound_ProbeBegin), static_cast<unsigned>(engine::kWin32Sound_ProbeEnd));
@@ -68,6 +72,7 @@ namespace sea::debug {
 			}
 		}
 
+		// Returns "3D" for a buffer with a 3D interface and "2D" without. Returns "?" if not a DirectSound object.
 		const char* DescribeBufferKind(std::uint32_t buffer) {
 			if (!audio::IsDSoundObject(buffer)) {
 				return "?";
@@ -80,6 +85,7 @@ namespace sea::debug {
 			return "2D";
 		}
 
+		// Logs one `[Play]` line with flags, environment, attenuation, buffer kind, route, sound form and path.
 		void LogPlay(void* sound, bool loop, const char* route) {
 			const std::uint32_t flags = Field<std::uint32_t>(sound, engine::kSound_TypeFlags);
 			char flagText[160];
@@ -102,14 +108,20 @@ namespace sea::debug {
 				Field<std::uint16_t>(sound, engine::kSound_ReverbAttenuation), DescribeBufferKind(buffer), route, sourceText,
 				&Field<char>(sound, engine::kSound_FilePath));
 		}
+
 	}
 
+	// Arms the layout probe for the first `[Debug] iLayoutProbeCount` sounds. Called once after `config::Load`.
 	void InitializeSoundProbe() {
 		g_layoutProbesLeft = static_cast<int>(config::Get().debug.layoutProbeCount);
 	}
 
+	// Logs a played sound (`[Debug] bLogSoundPlay`) and scans the first sounds for DirectSound objects.
+	// Called after the original `Play`.
+	//
+	// Thread: Audio
 	void OnSoundPlayed(void* sound, bool loop, const char* route) {
-		// A race can make the count negative. This is safe.
+		// A race can make the count negative. Harmless.
 		if (g_layoutProbesLeft.load(std::memory_order_relaxed) > 0 && g_layoutProbesLeft.fetch_sub(1) > 0) {
 			ProbeLayout(sound);
 		}
@@ -119,6 +131,10 @@ namespace sea::debug {
 		}
 	}
 
+	// Logs a change of the engine's environment type on a sound (`[Debug] bLogSoundEnvironment`).
+	// Called after the original `SetEnvironmentType`. Engine calls it from several threads.
+	//
+	// Thread: Any
 	void OnEnvironmentTypeChanged(void* sound, std::uint32_t previous, std::uint32_t type) {
 		if (!config::Get().debug.logSoundEnvironment || previous == type) {
 			return;
@@ -128,4 +144,5 @@ namespace sea::debug {
 			previous, engine::EnvironmentTypeName(previous), type, engine::EnvironmentTypeName(type),
 			&Field<char>(sound, engine::kSound_FilePath));
 	}
+
 }

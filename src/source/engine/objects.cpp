@@ -4,14 +4,17 @@
 #include "utils/memory.h"
 
 namespace sea::engine {
+
 	using mem::Field;
 
 	namespace {
+
 		const mem::ModuleRange& ExeRange() {
 			static const mem::ModuleRange range = mem::GetModuleRange(nullptr);
 
 			return range;
 		}
+
 	}
 
 	void* GetPlayer() {
@@ -26,6 +29,7 @@ namespace sea::engine {
 		return Field<void*>(reference, kRefr_ParentCell);
 	}
 
+	// Returns the acoustic space of a cell (`ExtraCellAcousticSpace`) or null.
 	void* GetCellAcousticSpace(void* cell) {
 		if (!cell) {
 			return nullptr;
@@ -44,6 +48,7 @@ namespace sea::engine {
 		return nullptr;
 	}
 
+	// Returns the editor ID of a form or empty string if not available. 
 	const char* GetEditorID(void* form) {
 		if (!form) {
 			return "";
@@ -71,6 +76,7 @@ namespace sea::engine {
 		return Field<std::uint32_t>(form, kForm_RefID);
 	}
 
+	// Returns the form type ID, 0 for null.
 	std::uint8_t GetFormType(void* form) {
 		if (!form) {
 			return 0;
@@ -79,6 +85,8 @@ namespace sea::engine {
 		return Field<std::uint8_t>(form, kForm_TypeID);
 	}
 
+	// Returns the short record name of a form type, e.g. "STAT". 
+	// Returns string "?" for types unknown to plugin.
 	const char* FormTypeName(std::uint8_t formType) {
 		switch (formType) {
 		case kFormType_TESObjectACTI:
@@ -111,6 +119,12 @@ namespace sea::engine {
 		case kFormType_TESFurniture:
 			return "FURN";
 
+		case kFormType_TESNPC:
+			return "NPC_";
+
+		case kFormType_TESCreature:
+			return "CREA";
+
 		case kFormType_TESObjectREFR:
 			return "REFR";
 
@@ -141,6 +155,7 @@ namespace sea::engine {
 		return Field<Vector3>(reference, kRefr_Position);
 	}
 
+	// Returns the rotation of a reference in radians.
 	Vector3 GetRotation(void* reference) {
 		if (!reference) {
 			return {};
@@ -149,6 +164,8 @@ namespace sea::engine {
 		return Field<Vector3>(reference, kRefr_Rotation);
 	}
 
+	// Returns the model path relative to "meshes\". 
+	// Returns empty string if the form type has no model or the path is empty.
 	const char* GetModelPath(void* baseForm) {
 		std::uintptr_t modelOffset = 0;
 
@@ -185,6 +202,9 @@ namespace sea::engine {
 		return path;
 	}
 
+	// Returns the references in the object list of a cell.
+	//
+	// Thread: Main
 	std::vector<void*> GetCellReferences(void* cell) {
 		std::vector<void*> references;
 
@@ -207,6 +227,11 @@ namespace sea::engine {
 		return references;
 	}
 
+	// Returns the sound object for a form a game sound plays. 
+	// Returns null if the value is not a valid `TESSound`.
+	// 
+	// Safe to use with unset or stale values.
+	// Depends on JIP patch to be active.
 	void* GetSourceSoundChecked(void* gameSound) {
 		std::uint32_t formAddress = 0;
 
@@ -235,4 +260,5 @@ namespace sea::engine {
 
 		return form;
 	}
+
 }

@@ -7,12 +7,17 @@
 #include <mutex>
 
 namespace sea::log {
+
 	namespace {
+
 		std::mutex g_lock;
 		std::FILE* g_file = nullptr;
 		ULONGLONG g_startTime = 0;
+
 	}
 
+	// Opens the log file at `path` and overwrites it. 
+	// Other processes may read it while the game runs.
 	void Open(const char* path) {
 		std::lock_guard guard(g_lock);
 
@@ -24,8 +29,13 @@ namespace sea::log {
 		g_startTime = GetTickCount64();
 	}
 
+	// Writes one line with the milliseconds since `Open` and the thread ID. 
+	// Lines longer than 1023 characters get truncated.
+	//
+	// Thread: Any
 	void Write(const char* format, ...) {
 		char line[1024];
+		
 		va_list arguments;
 		va_start(arguments, format);
 		std::vsnprintf(line, sizeof(line), format, arguments);
@@ -40,4 +50,5 @@ namespace sea::log {
 		std::fprintf(g_file, "%8llu [%05lu] %s\n", GetTickCount64() - g_startTime, GetCurrentThreadId(), line);
 		std::fflush(g_file);
 	}
+
 }

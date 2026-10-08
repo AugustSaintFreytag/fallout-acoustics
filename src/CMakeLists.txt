@@ -19,23 +19,40 @@ add_library(SaintsAcoustics SHARED
 	source/debug/cell_probe.cpp
 	source/debug/cover_probe.cpp
 	source/debug/eax_readback.cpp
+	source/debug/grid_probe.cpp
+	source/debug/occlusion_test.cpp
+	source/debug/pick_census.cpp
+	source/debug/ray_probe.cpp
+	source/debug/request_probe.cpp
 	source/debug/route_timing.cpp
 	source/debug/sound_probe.cpp
+	source/debug/update_probe.cpp
 
 	source/effects/mask_filter.cpp
 	source/effects/voice_cover.cpp
 	source/effects/voice_filter.cpp
 
+	source/fixes/open_close_sounds.cpp
+
 	source/engine/environment.cpp
 	source/engine/equipment.cpp
+	source/engine/havok.cpp
 	source/engine/objects.cpp
+	source/engine/scene.cpp
 	source/engine/sound_flags.cpp
 	source/engine/ui.cpp
 
+	source/hooks/havok_hooks.cpp
+	source/hooks/request_hooks.cpp
 	source/hooks/sound_hooks.cpp
 	source/hooks/voice_hooks.cpp
 
 	source/input/hotkeys.cpp
+
+	source/occlusion/apply.cpp
+	source/occlusion/occlusion.cpp
+	source/occlusion/probe.cpp
+	source/occlusion/registry.cpp
 
 	source/reverb/listener.cpp
 	source/reverb/reverb.cpp
@@ -43,6 +60,7 @@ add_library(SaintsAcoustics SHARED
 
 	source/utils/log.cpp
 	source/utils/memory.cpp
+	source/utils/threads.cpp
 )
 
 target_include_directories(SaintsAcoustics PRIVATE include source)

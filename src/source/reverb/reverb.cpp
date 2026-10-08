@@ -10,6 +10,7 @@
 #include "reverb/listener.h"
 #include "reverb/presets.h"
 #include "reverb/routing.h"
+#include "occlusion/apply.h"
 #include "utils/log.h"
 #include "utils/memory.h"
 
@@ -18,21 +19,27 @@
 #include <cmath>
 
 namespace sea::reverb {
+
 	using mem::Field;
 
 	namespace {
-		// Main thread writes, audio thread only reads.
+
+		// Thread: Main (Read, Write)
+		// Thread: Audio (Read)
 		std::atomic<bool> g_bypass{false};
 
-		// Audio thread only.
-		enum class EaxState { Unknown, Available, Unavailable };
+		// Thread: Audio
+		enum class EaxState {
+			Unknown, Available, Unavailable
+		};
+		
 		EaxState g_eaxState = EaxState::Unknown;
 		std::uint32_t g_appliedEnvironment = 0;
-		LONG g_appliedVolume = 1;  // Invalid level, first apply always runs.
+		LONG g_appliedVolume = 1;  // Invalid level, so the first `ApplyVolume` always sets the volume
 
 		// Adds the deferred flag if `[Debug] bDeferEaxSets` is on.
 		// The last set in `ApplySource` is immediate and commits all deferred values.
-		// If a set fails before it, the next sound commits the values.
+		// If a set fails before it, the next sound commits the values instead.
 		ULONG Deferred(ULONG propertyId) {
 			if (!config::Get().debug.deferEaxSets) {
 				return propertyId;
@@ -41,6 +48,8 @@ namespace sea::reverb {
 			return propertyId | eax::kDeferred;
 		}
 
+		// Loads the preset of the listener environment (or `[Debug] sForceEnvironment`) into FX slot 0, if it changed.
+		// Adds `fRoomBoost` to the room level of the preset.
 		// Returns true if the reverb parameters changed.
 		bool ApplyEnvironment(IKsPropertySet* propertySet) {
 			const config::Settings& settings = config::Get();
@@ -55,7 +64,7 @@ namespace sea::reverb {
 			}
 
 			eax::ReverbProperties preset = kPresets[environment - 1];
-			const LONG roomBoost = static_cast<LONG>(std::lround(settings.reverb.roomBoostDb * 100.0f));
+			const LONG roomBoost = static_cast<LONG>(std::lround(settings.reverb.roomBoost * 100.0f));
 			preset.room = std::clamp(preset.room + roomBoost, eax::kMinLevel, 0L);
 
 			const ULONG propertyId = Deferred(eax::kReverb_AllParameters);
@@ -78,8 +87,10 @@ namespace sea::reverb {
 			return true;
 		}
 
+		// Sets the primary FX slot volume to the configured wet level or to silent while bypassed. 
+		// Bails if volume is unchanged.
 		void ApplyVolume(IKsPropertySet* propertySet) {
-			LONG volume = eax::DecibelsToMillibels(config::Get().reverb.wetLevelDb);
+			LONG volume = eax::DecibelsToMillibels(config::Get().reverb.wetLevel);
 
 			if (g_bypass.load(std::memory_order_relaxed)) {
 				volume = eax::kMinLevel;
@@ -102,8 +113,8 @@ namespace sea::reverb {
 			}
 		}
 
-		// Set FX slot 0 to the desired env and fx wet level, if values have changed.
-		// Returns true if the reverb parameters changed.
+		// Sets FX slot 0 to the listener environment and the wet level.
+		// Returns true if reverb parameters changed.
 		bool ApplySlot(IKsPropertySet* propertySet) {
 			const bool environmentChanged = ApplyEnvironment(propertySet);
 			ApplyVolume(propertySet);
@@ -111,10 +122,15 @@ namespace sea::reverb {
 			return environmentChanged;
 		}
 
-		void ApplySource(IKsPropertySet* propertySet, const Route& route) {
+		// Sets the active FX slots of a sound and its send level into the primary fx slot. 
+		// A sound with its send set to off (muted) does not get a slot.
+		//
+		// `keepSlot`: the sound can be occluded. OpenAL Soft applies source occlusion to the direct path only while
+		// slot 0 is active, so such a sound keeps slot 0 with a silent send instead of null slots.
+		void ApplySource(IKsPropertySet* propertySet, const Route& route, bool keepSlot) {
 			eax::ActiveFXSlots slots{};
 
-			if (route.sendDb <= config::kSendOff) {
+			if (route.sendLevel <= config::kSendOff && !keepSlot) {
 				eax::SetProperty(propertySet, eax::kSource, eax::kSource_ActiveFXSlotID, &slots, sizeof(slots), "active slots (none)");
 
 				return;
@@ -128,12 +144,15 @@ namespace sea::reverb {
 				return;
 			}
 
-			const eax::SourceSendProperties send{eax::kFXSlot0, eax::DecibelsToMillibels(route.sendDb), 0};
+			const eax::SourceSendProperties send{eax::kFXSlot0, eax::DecibelsToMillibels(route.sendLevel), 0};  // Off: -10000 mB
 			eax::SetProperty(propertySet, eax::kSource, eax::kSource_SendParameters, &send, sizeof(send), "send level");
 		}
 
+		// Checks whether EAX is available by trying a property set on the primary FX slot.
+		// Marks EAX available or unavailable for the session.
+		//
 		// EAX 4 slots 0 and 1 are locked legacy slots (OpenAL Soft: eax4_fx_slot_ensure_unlocked).
-		// Slot 0 always holds a reverb, and LOADEFFECT on it fails. Can do a volume write to probe.
+		// Slot 0 always holds a reverb, and LOADEFFECT on it fails.
 		bool ProbeEax(IKsPropertySet* propertySet) {
 			const LONG volume = eax::kMinLevel;
 
@@ -151,8 +170,13 @@ namespace sea::reverb {
 
 			return true;
 		}
+
 	}
 
+	// Toggles the bypass for reverb processed audio in the final mix. Effectively mutes "wet" output.
+	// Returns true if processing is active (not bypassed/not disabled) after the toggle.
+	// 
+	// Thread: Main
 	bool ToggleBypass() {
 		const bool bypass = !g_bypass.load();
 		g_bypass.store(bypass);
@@ -166,10 +190,18 @@ namespace sea::reverb {
 		return !bypass;
 	}
 
+	// Returns if reverb processed audio is currently bypassed for the final mix.
+	// 
+	// Thread: Any
 	bool IsBypassed() {
 		return g_bypass.load(std::memory_order_relaxed);
 	}
 
+	// Sets up reverb for the given sound. Updates primary FX slot, then the sound's active slot and send level.
+	// Called before the original `Play`.
+	// Returns the routing label.
+	// 
+	// Thread: Audio
 	const char* OnSoundPlay(void* gameSound) {
 		if (!config::Get().reverb.enabled) {
 			return "disabled";
@@ -202,14 +234,15 @@ namespace sea::reverb {
 		const bool environmentChanged = ApplySlot(propertySet);
 
 		const Route route = Classify(Field<std::uint32_t>(gameSound, engine::kSound_TypeFlags));
-		ApplySource(propertySet, route);
+		const bool keepSlot = config::Get().occlusion.enabled && occlusion::HasPosition(gameSound);
+		ApplySource(propertySet, route, keepSlot);
 
-		// Read back after ApplySource, so that deferred values are committed.
+		// Read back after ApplySource so deferred values can be committed.
 		if (environmentChanged) {
 			debug::ReadBackSlot(propertySet);
 		}
 
-		if (route.sendDb > config::kSendOff) {
+		if (route.sendLevel > config::kSendOff) {
 			debug::ReadBackSource(propertySet, route.label);
 		}
 
@@ -217,4 +250,5 @@ namespace sea::reverb {
 
 		return route.label;
 	}
+
 }
