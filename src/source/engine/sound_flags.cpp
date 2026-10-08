@@ -3,6 +3,7 @@
 #include <cstdio>
 
 namespace sea::engine {
+
 	namespace {
 		struct FlagName {
 			std::uint32_t bit;
@@ -46,6 +47,7 @@ namespace sea::engine {
 		}
 	}
 
+	// Writes the names of the set flags, joined by `|`, into `buffer`, for debugging.
 	void DescribeSoundFlags(std::uint32_t flags, char* buffer, std::size_t size) {
 		buffer[0] = '\0';
 
@@ -74,4 +76,5 @@ namespace sea::engine {
 			std::snprintf(buffer + usedLength, size - usedLength, "%s0x%X", FlagSeparator(usedLength), unknownFlags);
 		}
 	}
+
 }
