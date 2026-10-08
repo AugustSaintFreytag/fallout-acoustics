@@ -11,17 +11,24 @@
 #include <atomic>
 
 namespace sea::reverb {
+
 	using mem::Field;
 
 	namespace {
-		// Main thread writes, audio thread only reads.
+		// Thread: Main (Read, Write)
+		// Thread: Audio (Read)
 		std::atomic<std::uint32_t> g_listenerEnvironment{0};  // ANAM, 0 = unknown
 
-		// Main thread only.
+		// Thread: Main
 		std::uint32_t g_lastLoggedEnvironment = 0;
 		void* g_lastLoggedSpace = nullptr;
 	}
 
+	// Evaluates the player's current environment.
+	// Uses the engine's current acoustic space or the cell's space.
+	// If none is defined, use fallbacks.
+	//
+	// Thread: Main (each frame)
 	void UpdateListenerEnvironment() {
 		void* player = engine::GetPlayer();
 		void* cell = engine::GetParentCell(player);
@@ -44,6 +51,7 @@ namespace sea::reverb {
 			environment = Field<std::uint32_t>(space, engine::kAspc_EnvironmentType);
 		}
 
+		// If no space or space with type `None`, use fallback for cell kind.
 		if (environment == 0 || environment > kEnvironmentCount) {
 			const config::ReverbSettings& settings = config::Get().reverb;
 			const bool isInterior = Field<std::uint8_t>(cell, engine::kCell_Flags) & 1;
@@ -74,7 +82,11 @@ namespace sea::reverb {
 		}
 	}
 
+	// Returns the environment (ANAM) from the last update, 0 = unknown.
+	//
+	// Thread: Any
 	std::uint32_t GetListenerEnvironment() {
 		return g_listenerEnvironment.load(std::memory_order_relaxed);
 	}
+
 }
