@@ -58,9 +58,6 @@ namespace sea::config {
 		float lfRatio = 0.25f;
 		float roomRatio = 1.0f;
 
-		// Share of `fWallLevel` for a layer made of doors only, 0 to 1.
-		float doorWeight = 0.5f;
-
 		float maxDistance = 4096.0f;  // Game units. Sounds further away are not probed.
 		int rayBudget = 64;  // Casts per frame
 		float refreshInterval = 0.1f;  // Seconds between probes of the same sound
@@ -70,6 +67,12 @@ namespace sea::config {
 		float releaseTime = 0.25f;
 
 		int bypassKey = 0;  // Virtual-key code that turns occlusion off and on, 0 = no key
+	};
+
+	// Properties for the engine's distance attenuation of 3D sounds.
+	struct DistanceSettings {
+		// Factor on the min and max attenuation distance of each 3D sound. 2.0 = sounds carry twice as far.
+		float attenuationFactor = 1.0f;
 	};
 
 	// Properties for engine behavior fixes.
@@ -153,6 +156,7 @@ namespace sea::config {
 		SendSettings sends;
 		VoiceFilterSettings voiceFilters;
 		OcclusionSettings occlusion;
+		DistanceSettings distance;
 		FixSettings fixes;
 		HotkeySettings hotkeys;
 		DebugSettings debug;

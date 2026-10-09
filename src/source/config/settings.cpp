@@ -142,13 +142,19 @@ namespace sea::config {
 			occlusion.maxOcclusion = ReadFloat(iniPath, "Occlusion", "fMaxOcclusion", occlusion.maxOcclusion);
 			occlusion.lfRatio = ReadFloat(iniPath, "Occlusion", "fLFRatio", occlusion.lfRatio);
 			occlusion.roomRatio = ReadFloat(iniPath, "Occlusion", "fRoomRatio", occlusion.roomRatio);
-			occlusion.doorWeight = std::clamp(ReadFloat(iniPath, "Occlusion", "fDoorWeight", occlusion.doorWeight), 0.0f, 1.0f);
 			occlusion.maxDistance = ReadFloat(iniPath, "Occlusion", "fMaxDistance", occlusion.maxDistance);
 			occlusion.rayBudget = ReadInt(iniPath, "Occlusion", "iRayBudget", occlusion.rayBudget);
 			occlusion.refreshInterval = ReadFloat(iniPath, "Occlusion", "fRefreshInterval", occlusion.refreshInterval);
 			occlusion.attackTime = ReadFloat(iniPath, "Occlusion", "fAttackTime", occlusion.attackTime);
 			occlusion.releaseTime = ReadFloat(iniPath, "Occlusion", "fReleaseTime", occlusion.releaseTime);
 			occlusion.bypassKey = ReadInt(iniPath, "Occlusion", "iBypassKey", occlusion.bypassKey);
+		}
+
+		void LoadDistance(const char* iniPath) {
+			DistanceSettings& distance = g_settings.distance;
+
+			const float factor = ReadFloat(iniPath, "Distance", "fDistanceAttenuationFactor", distance.attenuationFactor);
+			distance.attenuationFactor = std::clamp(factor, 0.1f, 10.0f);
 		}
 
 		void LoadFixes(const char* iniPath) {
@@ -198,14 +204,15 @@ namespace sea::config {
 
 			SEA_LOG("Config voice filters: Enabled=%d", g_settings.voiceFilters.enabled);
 
+			SEA_LOG("Config distance: AttenuationFactor=%.2f", g_settings.distance.attenuationFactor);
 			SEA_LOG("Config fixes: OpenCloseSounds=%d", g_settings.fixes.openCloseSounds);
 
 			const OcclusionSettings& occlusion = g_settings.occlusion;
 
-			SEA_LOG("Config occlusion: Enabled=%d Wall=%.1fdB Max=%.1fdB LFRatio=%.2f RoomRatio=%.2f DoorWeight=%.2f "
-					"MaxDistance=%.0f RayBudget=%d Refresh=%.2fs Attack=%.2fs Release=%.2fs BypassKey=0x%X",
+			SEA_LOG("Config occlusion: Enabled=%d Wall=%.1fdB Max=%.1fdB LFRatio=%.2f RoomRatio=%.2f MaxDistance=%.0f "
+					"RayBudget=%d Refresh=%.2fs Attack=%.2fs Release=%.2fs BypassKey=0x%X",
 				occlusion.enabled, occlusion.wallLevel, occlusion.maxOcclusion, occlusion.lfRatio, occlusion.roomRatio,
-				occlusion.doorWeight,				occlusion.maxDistance, occlusion.rayBudget, occlusion.refreshInterval, occlusion.attackTime,
+				occlusion.maxDistance, occlusion.rayBudget, occlusion.refreshInterval, occlusion.attackTime,
 				occlusion.releaseTime, occlusion.bypassKey);
 
 			const char* forceEnvironmentName = "off";
@@ -248,6 +255,7 @@ namespace sea::config {
 		LoadSends(iniPath.c_str());
 		LoadVoiceFilters(iniPath.c_str());
 		LoadOcclusion(iniPath.c_str());
+		LoadDistance(iniPath.c_str());
 		LoadFixes(iniPath.c_str());
 		LoadDebug(iniPath.c_str());
 
