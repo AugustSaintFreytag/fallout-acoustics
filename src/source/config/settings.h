@@ -47,7 +47,7 @@ namespace sea::config {
 		bool enabled = true;
 	};
 
-	// Properties for removing baked-in reverb from gunshot sounds.
+	// Properties for removing baked-in reverb from gunshot sounds and for the exterior gunfire tail.
 	struct GunshotSettings {
 		bool deverb = false;
 
@@ -56,6 +56,20 @@ namespace sea::config {
 		float maxFadeDelay = 0.25f;  // Seconds after the peak
 		float decayRate = 120.0f;  // dB per second
 		float repeatLevel = 6.0f;  // dB below the peak. A later peak at this level counts as another shot.
+
+		// Second reverb (FX slot 2) for gunfire in exteriors, derived from the listener environment preset.
+		bool exteriorTail = false;
+		float tailDecayFactor = 2.0f;
+		float tailReflectionsDelay = 0.1f;  // Seconds, added
+		float tailDiffusionFactor = 0.5f;
+		float tailHFRatioFactor = 0.7f;
+		float tailLateLevel = 12.0f;  // dB, added to the late reverb level
+
+		// Send into the tail by distance between listener and gunfire. 2D gunfire uses the near level.
+		float tailNearSend = -9.0f;  // dB
+		float tailFarSend = 0.0f;  // dB
+		float tailNearDistance = 1024.0f;  // Game units
+		float tailFarDistance = 8192.0f;  // Game units
 	};
 
 	// Properties for sound occlusion values.

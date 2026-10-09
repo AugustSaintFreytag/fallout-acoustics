@@ -153,6 +153,30 @@ namespace sea::config {
 
 			const float repeatLevel = ReadFloat(iniPath, "Gunshots", "fRepeatLevel", gunshots.repeatLevel);
 			gunshots.repeatLevel = std::max(repeatLevel, 0.0f);
+
+			gunshots.exteriorTail = ReadBool(iniPath, "Gunshots", "bExteriorTail", gunshots.exteriorTail);
+
+			const float tailDecayFactor = ReadFloat(iniPath, "Gunshots", "fTailDecayFactor", gunshots.tailDecayFactor);
+			gunshots.tailDecayFactor = std::clamp(tailDecayFactor, 0.1f, 10.0f);
+
+			const float tailReflectionsDelay = ReadFloat(iniPath, "Gunshots", "fTailReflectionsDelay", gunshots.tailReflectionsDelay);
+			gunshots.tailReflectionsDelay = std::clamp(tailReflectionsDelay, 0.0f, 0.3f);
+
+			const float tailDiffusionFactor = ReadFloat(iniPath, "Gunshots", "fTailDiffusionFactor", gunshots.tailDiffusionFactor);
+			gunshots.tailDiffusionFactor = std::clamp(tailDiffusionFactor, 0.0f, 10.0f);
+
+			const float tailHFRatioFactor = ReadFloat(iniPath, "Gunshots", "fTailHFRatioFactor", gunshots.tailHFRatioFactor);
+			gunshots.tailHFRatioFactor = std::clamp(tailHFRatioFactor, 0.0f, 10.0f);
+
+			gunshots.tailLateLevel = ReadFloat(iniPath, "Gunshots", "fTailLateLevel", gunshots.tailLateLevel);
+			gunshots.tailNearSend = ReadFloat(iniPath, "Gunshots", "fTailNearSend", gunshots.tailNearSend);
+			gunshots.tailFarSend = ReadFloat(iniPath, "Gunshots", "fTailFarSend", gunshots.tailFarSend);
+
+			const float tailNearDistance = ReadFloat(iniPath, "Gunshots", "fTailNearDistance", gunshots.tailNearDistance);
+			gunshots.tailNearDistance = std::max(tailNearDistance, 0.0f);
+
+			const float tailFarDistance = ReadFloat(iniPath, "Gunshots", "fTailFarDistance", gunshots.tailFarDistance);
+			gunshots.tailFarDistance = std::max(tailFarDistance, gunshots.tailNearDistance + 1.0f);
 		}
 
 		void LoadOcclusion(const char* iniPath) {
@@ -232,6 +256,12 @@ namespace sea::config {
 					"RepeatLevel=%.1fdB",
 				gunshots.deverb, gunshots.keepFraction, gunshots.fadeThreshold, gunshots.maxFadeDelay,
 				gunshots.decayRate, gunshots.repeatLevel);
+
+			SEA_LOG("Config gunfire tail: Enabled=%d DecayFactor=%.2f ReflectionsDelay=+%.3fs DiffusionFactor=%.2f "
+					"HFRatioFactor=%.2f LateLevel=%+.1fdB Send=%.1fdB..%.1fdB Distance=%.0f..%.0f",
+				gunshots.exteriorTail, gunshots.tailDecayFactor, gunshots.tailReflectionsDelay, gunshots.tailDiffusionFactor,
+				gunshots.tailHFRatioFactor, gunshots.tailLateLevel, gunshots.tailNearSend, gunshots.tailFarSend,
+				gunshots.tailNearDistance, gunshots.tailFarDistance);
 
 			SEA_LOG("Config distance: AttenuationFactor=%.2f", g_settings.distance.attenuationFactor);
 			SEA_LOG("Config fixes: OpenCloseSounds=%d", g_settings.fixes.openCloseSounds);
