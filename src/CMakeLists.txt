@@ -29,6 +29,7 @@ add_library(SaintsAcoustics SHARED
 	source/debug/sound_probe.cpp
 	source/debug/update_probe.cpp
 
+	source/effects/deverb.cpp
 	source/effects/distance.cpp
 	source/effects/gunshot_filter.cpp
 	source/effects/gunshot_path.cpp
