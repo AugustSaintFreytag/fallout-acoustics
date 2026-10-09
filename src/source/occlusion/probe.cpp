@@ -1,6 +1,5 @@
 #include "occlusion/probe.h"
 
-#include "config/settings.h"
 #include "engine/addresses.h"
 #include "engine/havok.h"
 #include "engine/objects.h"
@@ -25,8 +24,11 @@ namespace sea::occlusion {
 		constexpr float kEmitterOriginRadius = 8.0f;  // Game units
 
 		// Objects this close to each other along the ray form one layer: seams, back-to-back walls, a door in its frame.
-		// Allows for about 24 units between walls at 60 degrees to the ray.
-		constexpr float kLayerMergeGap = 48.0f;  // Game units
+		// Back-to-back kit walls were seen 48 units apart along the ray.
+		constexpr float kLayerMergeGap = 64.0f;  // Game units
+
+		// Share of `fWallLevel` for a layer made of doors only.
+		constexpr float kDoorWeight = 0.5f;
 
 		// The engine's AI sight ray. In Phase 0 all ray layers gave the same hits. Filtering is done on the hits instead.
 		constexpr std::uint8_t kRayLayer = engine::kLayer_LineOfSight;
@@ -108,7 +110,7 @@ namespace sea::occlusion {
 			const std::uint8_t formType = engine::GetFormType(engine::GetBaseForm(reference));
 
 			if (formType == engine::kFormType_TESObjectDOOR) {
-				return config::Get().occlusion.doorWeight;
+				return kDoorWeight;
 			}
 
 			return 1.0f;
