@@ -13,6 +13,7 @@ add_library(SaintsAcoustics SHARED
 
 	source/audio/directsound.cpp
 	source/audio/eax_property.cpp
+	source/audio/pcm_buffer.cpp
 
 	source/config/settings.cpp
 
@@ -29,6 +30,8 @@ add_library(SaintsAcoustics SHARED
 	source/debug/update_probe.cpp
 
 	source/effects/distance.cpp
+	source/effects/gunshot_filter.cpp
+	source/effects/gunshot_path.cpp
 	source/effects/mask_filter.cpp
 	source/effects/voice_cover.cpp
 	source/effects/voice_filter.cpp
