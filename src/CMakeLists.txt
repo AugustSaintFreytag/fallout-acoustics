@@ -28,6 +28,7 @@ add_library(SaintsAcoustics SHARED
 	source/debug/sound_probe.cpp
 	source/debug/update_probe.cpp
 
+	source/effects/distance.cpp
 	source/effects/mask_filter.cpp
 	source/effects/voice_cover.cpp
 	source/effects/voice_filter.cpp

@@ -186,6 +186,8 @@ namespace sea::engine {
 	constexpr std::uintptr_t kSound_ReverbAttenuation = 0x01A;  // UInt16 (JG: usReverbAttenuation)
 	constexpr std::uintptr_t kSound_FilePath = 0x036;  // char[]
 	constexpr std::uintptr_t kSound_SourceSound = 0x134;  // TESSound*, set only when JIP's patch is active (JIP)
+	constexpr std::uintptr_t kSound_MaxAttenuationDistance = 0x13C;  // float, game units (JIP)
+	constexpr std::uintptr_t kSound_MinAttenuationDistance = 0x140;  // float, game units (JIP)
 	constexpr std::uintptr_t kSound_EnvironmentType = 0x154;  // UInt32 (EXE: SetEnvironmentType writes it)
 
 	// Infrastructure
