@@ -7,6 +7,7 @@
 #include "debug/eax_readback.h"
 #include "engine/addresses.h"
 #include "engine/environment.h"
+#include "reverb/gunfire_tail.h"
 #include "reverb/listener.h"
 #include "reverb/presets.h"
 #include "reverb/routing.h"
@@ -17,6 +18,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <optional>
 
 namespace sea::reverb {
 
@@ -48,16 +50,22 @@ namespace sea::reverb {
 			return propertyId | eax::kDeferred;
 		}
 
-		// Loads the preset of the listener environment (or `[Debug] sForceEnvironment`) into FX slot 0, if it changed.
+		// Returns the listener environment, or `[Debug] sForceEnvironment` if set. 0 = unknown.
+		std::uint32_t ResolveEnvironment() {
+			const std::uint32_t forceEnvironment = config::Get().debug.forceEnvironment;
+
+			if (forceEnvironment) {
+				return forceEnvironment;
+			}
+
+			return GetListenerEnvironment();
+		}
+
+		// Loads the preset of the given environment into FX slot 0, if it changed.
 		// Adds `fRoomBoost` to the room level of the preset.
 		// Returns true if the reverb parameters changed.
-		bool ApplyEnvironment(IKsPropertySet* propertySet) {
+		bool ApplyEnvironment(IKsPropertySet* propertySet, std::uint32_t environment) {
 			const config::Settings& settings = config::Get();
-			std::uint32_t environment = GetListenerEnvironment();
-
-			if (settings.debug.forceEnvironment) {
-				environment = settings.debug.forceEnvironment;
-			}
 
 			if (environment == 0 || environment == g_appliedEnvironment) {
 				return false;
@@ -128,30 +136,37 @@ namespace sea::reverb {
 			}
 		}
 
-		// Sets FX slot 0 to the listener environment and the wet level.
-		// Returns true if reverb parameters changed.
+		// Sets FX slot 0 to the listener environment and the wet level. Sets the gunfire tail in FX slot 2 to match.
+		// Returns true if reverb parameters of slot 0 changed.
 		bool ApplySlot(IKsPropertySet* propertySet) {
-			const bool environmentChanged = ApplyEnvironment(propertySet);
+			const std::uint32_t environment = ResolveEnvironment();
+			const bool environmentChanged = ApplyEnvironment(propertySet, environment);
 			ApplyVolume(propertySet);
+			ApplyTailSlot(propertySet, environment);
 
 			return environmentChanged;
 		}
 
-		// Sets the active FX slots of a sound and its send level into the primary fx slot. 
-		// A sound with its send set to off (muted) does not get a slot.
+		// Sets the active FX slots of a sound and its send levels. Slot 0 gets the route's send level.
+		// Slot 2 is active only with a tail send level (gunfire in exteriors).
+		// A sound with its send set to off (muted) and no tail does not get a slot.
 		//
 		// `keepSlot`: the sound can be occluded. OpenAL Soft applies source occlusion to the direct path only while
 		// slot 0 is active, so such a sound keeps slot 0 with a silent send instead of null slots.
-		void ApplySource(IKsPropertySet* propertySet, const Route& route, bool keepSlot) {
+		void ApplySource(IKsPropertySet* propertySet, const Route& route, bool keepSlot, std::optional<float> tailSendLevel) {
 			eax::ActiveFXSlots slots{};
 
-			if (route.sendLevel <= config::kSendOff && !keepSlot) {
+			if (route.sendLevel <= config::kSendOff && !keepSlot && !tailSendLevel) {
 				eax::SetProperty(propertySet, eax::kSource, eax::kSource_ActiveFXSlotID, &slots, sizeof(slots), "active slots (none)");
 
 				return;
 			}
 
 			slots.slots[0] = eax::kFXSlot0;
+
+			if (tailSendLevel) {
+				slots.slots[1] = eax::kFXSlot2;
+			}
 
 			const ULONG propertyId = Deferred(eax::kSource_ActiveFXSlotID);
 
@@ -160,7 +175,19 @@ namespace sea::reverb {
 			}
 
 			const eax::SourceSendProperties send{eax::kFXSlot0, eax::DecibelsToMillibels(route.sendLevel), 0};  // Off: -10000 mB
-			eax::SetProperty(propertySet, eax::kSource, eax::kSource_SendParameters, &send, sizeof(send), "send level");
+
+			if (!tailSendLevel) {
+				eax::SetProperty(propertySet, eax::kSource, eax::kSource_SendParameters, &send, sizeof(send), "send level");
+
+				return;
+			}
+
+			const eax::SourceSendProperties sends[2] = {
+				send,
+				{eax::kFXSlot2, eax::DecibelsToMillibels(*tailSendLevel), 0},
+			};
+
+			eax::SetProperty(propertySet, eax::kSource, eax::kSource_SendParameters, sends, sizeof(sends), "send levels (tail)");
 		}
 
 		// Checks whether EAX is available by trying a property set on the primary FX slot.
@@ -252,7 +279,7 @@ namespace sea::reverb {
 		const Route route = Classify(soundFlags);
 		const bool keepSlot = config::Get().occlusion.enabled && occlusion::HasPosition(gameSound);
 		ApplyRadioBoost(propertySet, soundFlags);
-		ApplySource(propertySet, route, keepSlot);
+		ApplySource(propertySet, route, keepSlot, GetTailSendLevel(gameSound));
 
 		// Read back after ApplySource so deferred values can be committed.
 		if (environmentChanged) {

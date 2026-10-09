@@ -4,8 +4,8 @@
 #include "audio/pcm_buffer.h"
 #include "config/settings.h"
 #include "effects/deverb.h"
-#include "effects/gunshot_path.h"
 #include "engine/addresses.h"
+#include "engine/gunfire_path.h"
 #include "engine/sound_flags.h"
 #include "reverb/reverb.h"
 #include "utils/hash.h"
@@ -130,7 +130,7 @@ namespace sea::effects {
 
 		const char* path = &Field<char>(gameSound, engine::kSound_FilePath);
 
-		if (!IsGunshotPath(path)) {
+		if (engine::ClassifyGunfirePath(path) != engine::GunfireKind::Shot) {
 			return;
 		}
 

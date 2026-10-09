@@ -1,10 +1,10 @@
-#include "effects/gunshot_path.h"
+#include "engine/gunfire_path.h"
 
 #include <cctype>
 #include <cstddef>
 #include <string_view>
 
-namespace sea::effects {
+namespace sea::engine {
 
 	namespace {
 
@@ -34,6 +34,23 @@ namespace sea::effects {
 			return length;
 		}
 
+		// Returns the file name of the given path without its extension.
+		std::string_view FileStem(std::string_view path) {
+			const std::size_t slash = path.rfind('\\');
+
+			if (slash != std::string_view::npos) {
+				path.remove_prefix(slash + 1);
+			}
+
+			const std::size_t dot = path.rfind('.');
+
+			if (dot != std::string_view::npos) {
+				path.remove_suffix(path.size() - dot);
+			}
+
+			return path;
+		}
+
 		// Checks if the given file name has the fire marker as a whole word.
 		// The marker is followed by the end, `_` or a digit. `_fire_2d` and `_fire01` count, `_firelance` does not.
 		bool HasFireMarker(std::string_view stem) {
@@ -52,47 +69,30 @@ namespace sea::effects {
 			return false;
 		}
 
-		// Returns the file name of the given path without its extension.
-		std::string_view FileStem(std::string_view path) {
-			const std::size_t slash = path.rfind('\\');
-
-			if (slash != std::string_view::npos) {
-				path.remove_prefix(slash + 1);
-			}
-
-			const std::size_t dot = path.rfind('.');
-
-			if (dot != std::string_view::npos) {
-				path.remove_suffix(path.size() - dot);
-			}
-
-			return path;
-		}
-
 	}
 
-	// Checks if the given sound file path names a single gunshot.
-	// Vanilla and most mods keep weapon sounds in `sound\fx\wpn\` and gunshots have `_fire` as a word in the file name.
-	// Names with `loop` or ending in `_lp` are automatic fire and do not count.
-	bool IsGunshotPath(const char* path) {
+	// Returns the kind of weapon fire the given sound file path names.
+	// Vanilla and most mods keep weapon sounds in `sound\fx\wpn\` and fire sounds have `_fire` as a word in the file name.
+	// Names with `loop` or ending in `_lp` are automatic fire.
+	GunfireKind ClassifyGunfirePath(const char* path) {
 		char buffer[kMaxPathLength];
 		const std::string_view normalized(buffer, NormalizePath(path, buffer));
 
 		if (normalized.find(kWeaponFolder) == std::string_view::npos) {
-			return false;
+			return GunfireKind::None;
 		}
 
 		const std::string_view stem = FileStem(normalized);
 
 		if (!HasFireMarker(stem)) {
-			return false;
+			return GunfireKind::None;
 		}
 
 		if (stem.find(kLoopMarker) != std::string_view::npos || stem.ends_with(kLoopSuffix)) {
-			return false;
+			return GunfireKind::Loop;
 		}
 
-		return true;
+		return GunfireKind::Shot;
 	}
 
 }

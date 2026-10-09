@@ -32,7 +32,6 @@ add_library(SaintsAcoustics SHARED
 	source/effects/deverb.cpp
 	source/effects/distance.cpp
 	source/effects/gunshot_filter.cpp
-	source/effects/gunshot_path.cpp
 	source/effects/mask_filter.cpp
 	source/effects/voice_cover.cpp
 	source/effects/voice_filter.cpp
@@ -40,6 +39,7 @@ add_library(SaintsAcoustics SHARED
 	source/fixes/open_close_sounds.cpp
 
 	source/engine/environment.cpp
+	source/engine/gunfire_path.cpp
 	source/engine/equipment.cpp
 	source/engine/havok.cpp
 	source/engine/objects.cpp
@@ -59,6 +59,7 @@ add_library(SaintsAcoustics SHARED
 	source/occlusion/probe.cpp
 	source/occlusion/registry.cpp
 
+	source/reverb/gunfire_tail.cpp
 	source/reverb/listener.cpp
 	source/reverb/reverb.cpp
 	source/reverb/routing.cpp
