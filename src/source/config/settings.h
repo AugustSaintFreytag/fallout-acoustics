@@ -47,6 +47,17 @@ namespace sea::config {
 		bool enabled = true;
 	};
 
+	// Properties for removing baked-in reverb from gunshot sounds.
+	struct GunshotSettings {
+		bool deverb = false;
+
+		float keepFraction = 0.5f;  // Of the sound length, (0, 1]
+		float fadeThreshold = 3.0f;  // dB below the peak. Fade starts once the level stays below it.
+		float maxFadeDelay = 0.25f;  // Seconds after the peak
+		float decayRate = 120.0f;  // dB per second
+		float repeatLevel = 6.0f;  // dB below the peak. A later peak at this level counts as another shot.
+	};
+
 	// Properties for sound occlusion values.
 	struct OcclusionSettings {
 		bool enabled = false;
@@ -116,6 +127,9 @@ namespace sea::config {
 		// Face cover detection is used to determine pre-filters for voice modulation.
 		bool logVoiceCover = true;
 
+		// Logs each gunshot buffer once, deverbed or rejected, with the reason for a rejection.
+		bool logGunshots = false;
+
 		// Key used to cast rays from the camera along its view and log hits (0 to disable).
 		int rayProbeKey = 0;
 
@@ -155,6 +169,7 @@ namespace sea::config {
 		ReverbSettings reverb;
 		SendSettings sends;
 		VoiceFilterSettings voiceFilters;
+		GunshotSettings gunshots;
 		OcclusionSettings occlusion;
 		DistanceSettings distance;
 		FixSettings fixes;

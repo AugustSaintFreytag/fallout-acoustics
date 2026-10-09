@@ -134,6 +134,27 @@ namespace sea::config {
 			voiceFilters.enabled = ReadBool(iniPath, "VoiceFilters", "bEnabled", voiceFilters.enabled);
 		}
 
+		void LoadGunshots(const char* iniPath) {
+			GunshotSettings& gunshots = g_settings.gunshots;
+
+			gunshots.deverb = ReadBool(iniPath, "Gunshots", "bDeverb", gunshots.deverb);
+
+			const float keepFraction = ReadFloat(iniPath, "Gunshots", "fKeepFraction", gunshots.keepFraction);
+			gunshots.keepFraction = std::clamp(keepFraction, 0.05f, 1.0f);
+
+			const float fadeThreshold = ReadFloat(iniPath, "Gunshots", "fFadeThreshold", gunshots.fadeThreshold);
+			gunshots.fadeThreshold = std::max(fadeThreshold, 0.0f);
+
+			const float maxFadeDelay = ReadFloat(iniPath, "Gunshots", "fMaxFadeDelay", gunshots.maxFadeDelay);
+			gunshots.maxFadeDelay = std::max(maxFadeDelay, 0.0f);
+
+			const float decayRate = ReadFloat(iniPath, "Gunshots", "fDecayRate", gunshots.decayRate);
+			gunshots.decayRate = std::max(decayRate, 1.0f);
+
+			const float repeatLevel = ReadFloat(iniPath, "Gunshots", "fRepeatLevel", gunshots.repeatLevel);
+			gunshots.repeatLevel = std::max(repeatLevel, 0.0f);
+		}
+
 		void LoadOcclusion(const char* iniPath) {
 			OcclusionSettings& occlusion = g_settings.occlusion;
 
@@ -174,6 +195,7 @@ namespace sea::config {
 			debug.deferEaxSets = ReadBool(iniPath, "Debug", "bDeferEaxSets", debug.deferEaxSets);
 			debug.logRouteTiming = ReadBool(iniPath, "Debug", "bLogRouteTiming", debug.logRouteTiming);
 			debug.logVoiceCover = ReadBool(iniPath, "Debug", "bLogVoiceCover", debug.logVoiceCover);
+			debug.logGunshots = ReadBool(iniPath, "Debug", "bLogGunshots", debug.logGunshots);
 
 			debug.rayProbeKey = ReadInt(iniPath, "Debug", "iRayProbeKey", debug.rayProbeKey);
 			debug.rayProbeLayers = ReadLayerList(iniPath, "Debug", "sRayProbeLayers", debug.rayProbeLayers);
@@ -204,6 +226,13 @@ namespace sea::config {
 
 			SEA_LOG("Config voice filters: Enabled=%d", g_settings.voiceFilters.enabled);
 
+			const GunshotSettings& gunshots = g_settings.gunshots;
+
+			SEA_LOG("Config gunshots: Deverb=%d Keep=%.2f FadeThreshold=%.1fdB MaxFadeDelay=%.3fs Decay=%.0fdB/s "
+					"RepeatLevel=%.1fdB",
+				gunshots.deverb, gunshots.keepFraction, gunshots.fadeThreshold, gunshots.maxFadeDelay,
+				gunshots.decayRate, gunshots.repeatLevel);
+
 			SEA_LOG("Config distance: AttenuationFactor=%.2f", g_settings.distance.attenuationFactor);
 			SEA_LOG("Config fixes: OpenCloseSounds=%d", g_settings.fixes.openCloseSounds);
 
@@ -222,9 +251,10 @@ namespace sea::config {
 			}
 
 			SEA_LOG("Config debug: Force=%s Readback=%u LogSoundPlay=%d LogSoundEnvironment=%d LayoutProbeCount=%u "
-					"DeferEaxSets=%d LogRouteTiming=%d LogVoiceCover=%d",
+					"DeferEaxSets=%d LogRouteTiming=%d LogVoiceCover=%d LogGunshots=%d",
 				forceEnvironmentName, debug.readbackCount, debug.logSoundPlay, debug.logSoundEnvironment,
-				debug.layoutProbeCount, debug.deferEaxSets, debug.logRouteTiming, debug.logVoiceCover);
+				debug.layoutProbeCount, debug.deferEaxSets, debug.logRouteTiming, debug.logVoiceCover,
+				debug.logGunshots);
 
 			char layerText[64] = "";
 			std::size_t layerTextLength = 0;
@@ -254,6 +284,7 @@ namespace sea::config {
 		LoadReverb(iniPath.c_str());
 		LoadSends(iniPath.c_str());
 		LoadVoiceFilters(iniPath.c_str());
+		LoadGunshots(iniPath.c_str());
 		LoadOcclusion(iniPath.c_str());
 		LoadDistance(iniPath.c_str());
 		LoadFixes(iniPath.c_str());
