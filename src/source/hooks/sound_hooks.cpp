@@ -7,6 +7,7 @@
 #include "debug/route_timing.h"
 #include "debug/sound_probe.h"
 #include "debug/update_probe.h"
+#include "effects/distance.h"
 #include "effects/voice_filter.h"
 #include "engine/addresses.h"
 #include "occlusion/apply.h"
@@ -36,6 +37,7 @@ namespace sea::hooks {
 		// Routes a sound into the reverb, sets its occlusion and filters a covered voice. Then plays it.
 		bool __fastcall Hook_Play(void* sound, void* /*edx*/, bool loop) {
 			threads::RememberAudioThread();
+			effects::ScaleAttenuationDistances(sound);
 
 			// Route before the original `Play` so first samples already reach the reverb.
 			const std::int64_t routeStartTime = debug::BeginRouteTiming();
