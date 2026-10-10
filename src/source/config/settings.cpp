@@ -221,6 +221,7 @@ namespace sea::config {
 			FixSettings& fixes = settings.fixes;
 
 			fixes.openCloseSounds = ReadBool(iniPath, "Fixes", "bFixDoubleOpenCloseSounds", fixes.openCloseSounds);
+			fixes.loadHolotapeSounds = ReadBool(iniPath, "Fixes", "bFixLoadHolotapeSounds", fixes.loadHolotapeSounds);
 		}
 
 		void LoadDebug(const char* iniPath, Settings& settings) {
@@ -290,7 +291,8 @@ namespace sea::config {
 				impacts.tailNearDistance, impacts.tailFarDistance);
 
 			SEA_LOG("Config vocals: Enabled=%d", settings.vocals.enabled);
-			SEA_LOG("Config fixes: OpenCloseSounds=%d", settings.fixes.openCloseSounds);
+			SEA_LOG("Config fixes: OpenCloseSounds=%d LoadHolotapeSounds=%d", settings.fixes.openCloseSounds,
+				settings.fixes.loadHolotapeSounds);
 
 			const DebugSettings& debug = settings.debug;
 			const char* forceEnvironmentName = "off";

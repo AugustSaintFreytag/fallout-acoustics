@@ -176,6 +176,7 @@ namespace sea::engine {
 	constexpr std::uintptr_t kVtbl_BSWin32GameSound = 0x10A3BF4;  // (JIP, ST)
 	constexpr std::uintptr_t kSoundVtbl_SetEnvironmentType = 0x18;  // void(UInt32), writes +0x154 (EXE: ret 4)
 	constexpr std::uintptr_t kSoundVtbl_Play = 0x30;  // bool(bool loop), reads +0x198/+0x19C (EXE: ret 4)
+	constexpr std::uintptr_t kSoundVtbl_SetVolume = 0x3C;  // bool(float volume) (JIP, JG slot 15)
 	constexpr std::uintptr_t kSoundVtbl_Update = 0x44;  // bool(DWORD timeDelta) (JG slot 17; EXE: ret 4)
 	constexpr std::uintptr_t kSoundVtbl_GetEmitterPosition = 0x54;  // void(NiPoint3&) (JG slot 21; EXE: ret 4, reads +0x218)
 

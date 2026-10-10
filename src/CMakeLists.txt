@@ -36,6 +36,7 @@ add_library(SaintsAcoustics SHARED
 	source/effects/voice_cover.cpp
 	source/effects/voice_filter.cpp
 
+	source/fixes/load_holotape_sounds.cpp
 	source/fixes/open_close_sounds.cpp
 
 	source/engine/environment.cpp
