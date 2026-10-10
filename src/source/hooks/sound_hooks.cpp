@@ -9,6 +9,7 @@
 #include "debug/update_probe.h"
 #include "effects/distance.h"
 #include "effects/gunshot_filter.h"
+#include "effects/holotape_filter.h"
 #include "effects/voice_filter.h"
 #include "engine/addresses.h"
 #include "fixes/load_holotape_sounds.h"
@@ -36,7 +37,8 @@ namespace sea::hooks {
 		UpdateFn g_originalUpdate = nullptr;
 		SetEnvironmentTypeFn g_originalSetEnvironmentType = nullptr;
 
-		// Routes a sound into the reverb, sets its occlusion, filters a covered voice and deverbs a gunshot. Then plays it.
+		// Routes a sound into the reverb, sets its occlusion, filters a covered voice or a holotape and deverbs a gunshot.
+		// Then plays it.
 		bool __fastcall Hook_Play(void* sound, void* /*edx*/, bool loop) {
 			threads::RememberAudioThread();
 			effects::ScaleAttenuationDistances(sound);
@@ -52,6 +54,7 @@ namespace sea::hooks {
 
 			// Filter before the original `Play` so playback starts with filtered data.
 			effects::ProcessVoiceFilter(sound);
+			effects::ProcessHolotapeFilter(sound);
 			effects::ProcessGunshotFilter(sound, loop);
 
 			fixes::MuteLoadHolotapeSound(sound);
