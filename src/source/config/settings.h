@@ -110,6 +110,9 @@ namespace sea::config {
 	struct HotkeySettings {
 		// Virtual-key code (VK_END), 0 = no key
 		int bypassKey = 0x23;
+
+		// Key that reloads the INI. Virtual-key code (VK_INSERT), 0 = no key
+		int reloadKey = 0x2D;
 	};
 
 	// Properties for debugging.
@@ -192,6 +195,8 @@ namespace sea::config {
 	};
 
 	void Load(const std::string& iniPath);
+
+	void Reload();
 
 	const Settings& Get();
 

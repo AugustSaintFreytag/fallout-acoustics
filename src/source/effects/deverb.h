@@ -12,6 +12,8 @@ namespace sea::effects {
 		double maxFadeDelay;  // Seconds after the peak
 		double decayRate;  // dB per second
 		double repeatLevel;  // dB below the peak. A later peak at this level counts as another shot.
+
+		bool operator==(const DeverbParameters&) const = default;
 	};
 
 	enum class DeverbResult {

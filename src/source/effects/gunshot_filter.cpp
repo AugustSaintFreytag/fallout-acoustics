@@ -32,11 +32,26 @@ namespace sea::effects {
 		// Content hashes of buffers already handled, deverbed or rejected.
 		// The engine reuses buffers and can share sample memory between them. A known hash is skipped without analysis.
 		// A deverbed buffer is stored with its new content. A second deverb would shorten it again.
+		// The hashes are only valid for the parameters they were handled with.
 		std::mutex g_lock;
 		std::unordered_set<std::uint64_t> g_handledContents;
+		DeverbParameters g_handledParameters{};
 
 		// Thread: Audio
 		bool g_unsupportedFormatLogged = false;
+
+		// Forgets all handled contents if the given parameters differ from the ones they were handled with.
+		// A sound rejected before a reload then gets another analysis.
+		void ForgetHandledIfChanged(const DeverbParameters& parameters) {
+			std::lock_guard guard(g_lock);
+
+			if (parameters == g_handledParameters) {
+				return;
+			}
+
+			g_handledContents.clear();
+			g_handledParameters = parameters;
+		}
 
 		bool IsHandled(std::uint64_t contentHash) {
 			std::lock_guard guard(g_lock);
@@ -145,6 +160,9 @@ namespace sea::effects {
 			return;
 		}
 
+		const DeverbParameters parameters = ParametersFromSettings(settings.gunshots);
+		ForgetHandledIfChanged(parameters);
+
 		const std::uint64_t contentHash = hash::Fnv1a(lock.audio, lock.audioBytes);
 
 		if (IsHandled(contentHash)) {
@@ -154,7 +172,7 @@ namespace sea::effects {
 		}
 
 		const DeverbReport report = ApplyDeverb(lock.Samples(), lock.FrameCount(), lock.format.nChannels,
-			static_cast<double>(lock.format.nSamplesPerSec), ParametersFromSettings(settings.gunshots));
+			static_cast<double>(lock.format.nSamplesPerSec), parameters);
 
 		if (report.result == DeverbResult::Applied) {
 			RememberHandled(hash::Fnv1a(lock.audio, lock.audioBytes));

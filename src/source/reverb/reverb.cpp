@@ -36,7 +36,7 @@ namespace sea::reverb {
 		};
 		
 		EaxState g_eaxState = EaxState::Unknown;
-		std::uint32_t g_appliedEnvironment = 0;
+		eax::ReverbProperties g_appliedPreset{};  // Environment 0 = none applied yet
 		LONG g_appliedVolume = 1;  // Invalid level, so the first `ApplyVolume` always sets the volume
 
 		// Adds the deferred flag if `[Debug] bDeferEaxSets` is on.
@@ -61,13 +61,13 @@ namespace sea::reverb {
 			return GetListenerEnvironment();
 		}
 
-		// Loads the preset of the given environment into FX slot 0, if it changed.
-		// Adds `fRoomBoost` to the room level of the preset.
+		// Loads the preset of the given environment into FX slot 0, if it differs from the applied one.
+		// Adds `fRoomBoost` to the room level of the preset. A changed setting after a reload counts as a difference.
 		// Returns true if the reverb parameters changed.
 		bool ApplyEnvironment(IKsPropertySet* propertySet, std::uint32_t environment) {
 			const config::Settings& settings = config::Get();
 
-			if (environment == 0 || environment == g_appliedEnvironment) {
+			if (environment == 0) {
 				return false;
 			}
 
@@ -75,13 +75,17 @@ namespace sea::reverb {
 			const LONG roomBoost = static_cast<LONG>(std::lround(settings.reverb.roomBoost * 100.0f));
 			preset.room = std::clamp(preset.room + roomBoost, eax::kMinLevel, 0L);
 
+			if (preset == g_appliedPreset) {
+				return false;
+			}
+
 			const ULONG propertyId = Deferred(eax::kReverb_AllParameters);
 
 			if (!eax::SetProperty(propertySet, eax::kFXSlot0, propertyId, &preset, sizeof(preset), "reverb parameters")) {
 				return false;
 			}
 
-			g_appliedEnvironment = environment;
+			g_appliedPreset = preset;
 
 			const char* forcedSuffix = "";
 

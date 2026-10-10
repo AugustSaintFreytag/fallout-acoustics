@@ -6,14 +6,27 @@
 #include <Windows.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
+#include <vector>
 
 namespace sea::config {
 
 	namespace {
 
-		Settings g_settings;
+		// Settings before the first `Load`.
+		const Settings g_defaultSettings;
+
+		// Thread: Main (Read, Write)
+		// Thread: Any (Read)
+		std::atomic<const Settings*> g_currentSettings{&g_defaultSettings};
+
+		// All loaded settings, kept until exit. Another thread can still read the previous settings during a reload.
+		// Thread: Main
+		std::vector<std::unique_ptr<Settings>> g_loadedSettings;
+		std::string g_iniPath;
 
 		bool ReadBool(const char* iniPath, const char* section, const char* key, bool fallback) {
 			const UINT value = GetPrivateProfileIntA(section, key, static_cast<INT>(fallback), iniPath);
@@ -98,8 +111,8 @@ namespace sea::config {
 			return engine::EnvironmentTypeFromName(text, fallback);
 		}
 
-		void LoadReverb(const char* iniPath) {
-			ReverbSettings& reverb = g_settings.reverb;
+		void LoadReverb(const char* iniPath, Settings& settings) {
+			ReverbSettings& reverb = settings.reverb;
 
 			reverb.enabled = ReadBool(iniPath, "Reverb", "bEnabled", reverb.enabled);
 			reverb.wetLevel = ReadFloat(iniPath, "Reverb", "fWetLevel", reverb.wetLevel);
@@ -109,12 +122,12 @@ namespace sea::config {
 			reverb.exteriorFallback = ReadEnvironment(iniPath, "Reverb", "sExteriorFallback", reverb.exteriorFallback);
 
 			// The reverb bypass key is in `[Reverb]`, but is stored with the other hotkeys.
-			HotkeySettings& hotkeys = g_settings.hotkeys;
+			HotkeySettings& hotkeys = settings.hotkeys;
 			hotkeys.bypassKey = ReadInt(iniPath, "Reverb", "iBypassKey", hotkeys.bypassKey);
 		}
 
-		void LoadSends(const char* iniPath) {
-			SendSettings& sends = g_settings.sends;
+		void LoadSends(const char* iniPath, Settings& settings) {
+			SendSettings& sends = settings.sends;
 
 			sends.voice3D = ReadFloat(iniPath, "Sends", "fVoice3D", sends.voice3D);
 			sends.voice2D = ReadFloat(iniPath, "Sends", "fVoice2D", sends.voice2D);
@@ -128,14 +141,14 @@ namespace sea::config {
 			sends.default2D = ReadFloat(iniPath, "Sends", "fDefault2D", sends.default2D);
 		}
 
-		void LoadVoiceFilters(const char* iniPath) {
-			VoiceFilterSettings& voiceFilters = g_settings.voiceFilters;
+		void LoadVoiceFilters(const char* iniPath, Settings& settings) {
+			VoiceFilterSettings& voiceFilters = settings.voiceFilters;
 
 			voiceFilters.enabled = ReadBool(iniPath, "VoiceFilters", "bEnabled", voiceFilters.enabled);
 		}
 
-		void LoadGunshots(const char* iniPath) {
-			GunshotSettings& gunshots = g_settings.gunshots;
+		void LoadGunshots(const char* iniPath, Settings& settings) {
+			GunshotSettings& gunshots = settings.gunshots;
 
 			gunshots.deverb = ReadBool(iniPath, "Gunshots", "bDeverb", gunshots.deverb);
 
@@ -179,8 +192,8 @@ namespace sea::config {
 			gunshots.tailFarDistance = std::max(tailFarDistance, gunshots.tailNearDistance + 1.0f);
 		}
 
-		void LoadOcclusion(const char* iniPath) {
-			OcclusionSettings& occlusion = g_settings.occlusion;
+		void LoadOcclusion(const char* iniPath, Settings& settings) {
+			OcclusionSettings& occlusion = settings.occlusion;
 
 			occlusion.enabled = ReadBool(iniPath, "Occlusion", "bEnabled", occlusion.enabled);
 			occlusion.wallLevel = ReadFloat(iniPath, "Occlusion", "fWallLevel", occlusion.wallLevel);
@@ -195,21 +208,21 @@ namespace sea::config {
 			occlusion.bypassKey = ReadInt(iniPath, "Occlusion", "iBypassKey", occlusion.bypassKey);
 		}
 
-		void LoadDistance(const char* iniPath) {
-			DistanceSettings& distance = g_settings.distance;
+		void LoadDistance(const char* iniPath, Settings& settings) {
+			DistanceSettings& distance = settings.distance;
 
 			const float factor = ReadFloat(iniPath, "Distance", "fDistanceAttenuationFactor", distance.attenuationFactor);
 			distance.attenuationFactor = std::clamp(factor, 0.1f, 10.0f);
 		}
 
-		void LoadFixes(const char* iniPath) {
-			FixSettings& fixes = g_settings.fixes;
+		void LoadFixes(const char* iniPath, Settings& settings) {
+			FixSettings& fixes = settings.fixes;
 
 			fixes.openCloseSounds = ReadBool(iniPath, "Fixes", "bFixDoubleOpenCloseSounds", fixes.openCloseSounds);
 		}
 
-		void LoadDebug(const char* iniPath) {
-			DebugSettings& debug = g_settings.debug;
+		void LoadDebug(const char* iniPath, Settings& settings) {
+			DebugSettings& debug = settings.debug;
 
 			debug.forceEnvironment = ReadEnvironment(iniPath, "Debug", "sForceEnvironment", debug.forceEnvironment);
 			debug.readbackCount = static_cast<std::uint32_t>(ReadInt(iniPath, "Debug", "iReadbackCount", debug.readbackCount));
@@ -220,6 +233,10 @@ namespace sea::config {
 			debug.logRouteTiming = ReadBool(iniPath, "Debug", "bLogRouteTiming", debug.logRouteTiming);
 			debug.logVoiceCover = ReadBool(iniPath, "Debug", "bLogVoiceCover", debug.logVoiceCover);
 			debug.logGunshots = ReadBool(iniPath, "Debug", "bLogGunshots", debug.logGunshots);
+
+			// The reload key is in `[Debug]`, but is stored with the other hotkeys.
+			HotkeySettings& hotkeys = settings.hotkeys;
+			hotkeys.reloadKey = ReadInt(iniPath, "Debug", "iReloadKey", hotkeys.reloadKey);
 
 			debug.rayProbeKey = ReadInt(iniPath, "Debug", "iRayProbeKey", debug.rayProbeKey);
 			debug.rayProbeLayers = ReadLayerList(iniPath, "Debug", "sRayProbeLayers", debug.rayProbeLayers);
@@ -233,24 +250,24 @@ namespace sea::config {
 			debug.logOcclusion = ReadBool(iniPath, "Debug", "bLogOcclusion", debug.logOcclusion);
 		}
 
-		void LogSettings() {
-			const ReverbSettings& reverb = g_settings.reverb;
-			const SendSettings& sends = g_settings.sends;
-			const DebugSettings& debug = g_settings.debug;
+		void LogSettings(const Settings& settings) {
+			const ReverbSettings& reverb = settings.reverb;
+			const SendSettings& sends = settings.sends;
+			const DebugSettings& debug = settings.debug;
 
 			SEA_LOG("Config reverb: Enabled=%d Wet=%.1fdB RoomBoost=%.1fdB RadioBoost=%.1fdB InteriorFallback=%s "
 					"ExteriorFallback=%s BypassKey=0x%X",
 				reverb.enabled, reverb.wetLevel, reverb.roomBoost, reverb.radioBoost, engine::EnvironmentTypeName(reverb.interiorFallback),
-				engine::EnvironmentTypeName(reverb.exteriorFallback), g_settings.hotkeys.bypassKey);
+				engine::EnvironmentTypeName(reverb.exteriorFallback), settings.hotkeys.bypassKey);
 
 			SEA_LOG("Config sends (dB): Voice3D=%.1f Voice2D=%.1f Weapons=%.1f Footsteps=%.1f Loops3D=%.1f Loops2D=%.1f "
 					"Region=%.1f Radio3D=%.1f Default3D=%.1f Default2D=%.1f",
 				sends.voice3D, sends.voice2D, sends.weapons, sends.footsteps, sends.loops3D, sends.loops2D, sends.region,
 				sends.radio3D, sends.default3D, sends.default2D);
 
-			SEA_LOG("Config voice filters: Enabled=%d", g_settings.voiceFilters.enabled);
+			SEA_LOG("Config voice filters: Enabled=%d", settings.voiceFilters.enabled);
 
-			const GunshotSettings& gunshots = g_settings.gunshots;
+			const GunshotSettings& gunshots = settings.gunshots;
 
 			SEA_LOG("Config gunshots: Deverb=%d Keep=%.2f FadeThreshold=%.1fdB MaxFadeDelay=%.3fs Decay=%.0fdB/s "
 					"RepeatLevel=%.1fdB",
@@ -263,10 +280,10 @@ namespace sea::config {
 				gunshots.tailHFRatioFactor, gunshots.tailLateLevel, gunshots.tailNearSend, gunshots.tailFarSend,
 				gunshots.tailNearDistance, gunshots.tailFarDistance);
 
-			SEA_LOG("Config distance: AttenuationFactor=%.2f", g_settings.distance.attenuationFactor);
-			SEA_LOG("Config fixes: OpenCloseSounds=%d", g_settings.fixes.openCloseSounds);
+			SEA_LOG("Config distance: AttenuationFactor=%.2f", settings.distance.attenuationFactor);
+			SEA_LOG("Config fixes: OpenCloseSounds=%d", settings.fixes.openCloseSounds);
 
-			const OcclusionSettings& occlusion = g_settings.occlusion;
+			const OcclusionSettings& occlusion = settings.occlusion;
 
 			SEA_LOG("Config occlusion: Enabled=%d Wall=%.1fdB Max=%.1fdB LFRatio=%.2f RoomRatio=%.2f MaxDistance=%.0f "
 					"RayBudget=%d Refresh=%.2fs Attack=%.2fs Release=%.2fs BypassKey=0x%X",
@@ -281,10 +298,10 @@ namespace sea::config {
 			}
 
 			SEA_LOG("Config debug: Force=%s Readback=%u LogSoundPlay=%d LogSoundEnvironment=%d LayoutProbeCount=%u "
-					"DeferEaxSets=%d LogRouteTiming=%d LogVoiceCover=%d LogGunshots=%d",
+					"DeferEaxSets=%d LogRouteTiming=%d LogVoiceCover=%d LogGunshots=%d ReloadKey=0x%X",
 				forceEnvironmentName, debug.readbackCount, debug.logSoundPlay, debug.logSoundEnvironment,
 				debug.layoutProbeCount, debug.deferEaxSets, debug.logRouteTiming, debug.logVoiceCover,
-				debug.logGunshots);
+				debug.logGunshots, settings.hotkeys.reloadKey);
 
 			char layerText[64] = "";
 			std::size_t layerTextLength = 0;
@@ -305,30 +322,87 @@ namespace sea::config {
 				debug.testOcclusion, debug.occlusionTestKey, debug.probeGrid, debug.probePickThreads, debug.logOcclusion);
 		}
 
+		void ReadSettings(const char* iniPath, Settings& settings) {
+			LoadReverb(iniPath, settings);
+			LoadSends(iniPath, settings);
+			LoadVoiceFilters(iniPath, settings);
+			LoadGunshots(iniPath, settings);
+			LoadOcclusion(iniPath, settings);
+			LoadDistance(iniPath, settings);
+			LoadFixes(iniPath, settings);
+			LoadDebug(iniPath, settings);
+		}
+
+		// Makes the given settings current and keeps them until exit.
+		void Publish(std::unique_ptr<Settings> settings) {
+			g_currentSettings.store(settings.get(), std::memory_order_release);
+			g_loadedSettings.push_back(std::move(settings));
+		}
+
+		// A setting that decides at load which hooks get installed. A reload cannot change it.
+		struct LoadTimeSwitch {
+			const char* key;
+			bool previous;
+			bool next;
+		};
+
+		// Logs each load-time switch that differs between the given previous and next settings.
+		void LogLoadTimeChanges(const Settings& previous, const Settings& next) {
+			const LoadTimeSwitch switches[] = {
+				{"[VoiceFilters] bEnabled", previous.voiceFilters.enabled, next.voiceFilters.enabled},
+				{"[Occlusion] bEnabled", previous.occlusion.enabled, next.occlusion.enabled},
+				{"[Fixes] bFixDoubleOpenCloseSounds", previous.fixes.openCloseSounds, next.fixes.openCloseSounds},
+				{"[Debug] bLogSoundEnvironment", previous.debug.logSoundEnvironment, next.debug.logSoundEnvironment},
+				{"[Debug] bProbeSoundRequests", previous.debug.probeSoundRequests, next.debug.probeSoundRequests},
+				{"[Debug] bProbeSoundUpdate", previous.debug.probeSoundUpdate, next.debug.probeSoundUpdate},
+				{"[Debug] iTestOcclusion", previous.debug.testOcclusion != 0, next.debug.testOcclusion != 0},
+				{"[Debug] bProbePickThreads", previous.debug.probePickThreads, next.debug.probePickThreads},
+			};
+
+			for (const LoadTimeSwitch& loadTimeSwitch : switches) {
+				if (loadTimeSwitch.previous != loadTimeSwitch.next) {
+					SEA_LOG("Config: %s changed. It needs a restart to apply.", loadTimeSwitch.key);
+				}
+			}
+		}
+
 	}
 
-	// Reads the INI at `iniPath` into settings and logs them. A missing key keeps the default.
+	// Reads the INI at the given path into new settings, makes them current and logs them. A missing key keeps the default.
+	// Remembers the path for `Reload`.
 	//
 	// Thread: Main (load time only)
 	void Load(const std::string& iniPath) {
-		LoadReverb(iniPath.c_str());
-		LoadSends(iniPath.c_str());
-		LoadVoiceFilters(iniPath.c_str());
-		LoadGunshots(iniPath.c_str());
-		LoadOcclusion(iniPath.c_str());
-		LoadDistance(iniPath.c_str());
-		LoadFixes(iniPath.c_str());
-		LoadDebug(iniPath.c_str());
+		g_iniPath = iniPath;
 
-		SEA_LOG("Config loaded from '%s'.", iniPath.c_str());
-		LogSettings();
+		auto settings = std::make_unique<Settings>();
+		ReadSettings(g_iniPath.c_str(), *settings);
+
+		SEA_LOG("Config loaded from '%s'.", g_iniPath.c_str());
+		LogSettings(*settings);
+		Publish(std::move(settings));
 	}
 
-	// Returns settings as read by `Load`. Not changed after load.
+	// Reads the INI from `Load` again into new settings, makes them current and logs them.
+	// Values read on use apply at once. Reverb presets apply on the next sound.
+	// Load-time switches keep their effect until a restart. Each changed one is logged.
+	//
+	// Thread: Main
+	void Reload() {
+		auto settings = std::make_unique<Settings>();
+		ReadSettings(g_iniPath.c_str(), *settings);
+
+		SEA_LOG("Config reloaded from '%s'.", g_iniPath.c_str());
+		LogLoadTimeChanges(Get(), *settings);
+		LogSettings(*settings);
+		Publish(std::move(settings));
+	}
+
+	// Returns the current settings. A reload replaces them, but the returned settings stay valid until exit.
 	//
 	// Thread: Any
 	const Settings& Get() {
-		return g_settings;
+		return *g_currentSettings.load(std::memory_order_acquire);
 	}
 
 }

@@ -31,7 +31,7 @@ namespace sea::reverb {
 
 		// Thread: Audio
 		SlotState g_slotState = SlotState::Unloaded;
-		std::uint32_t g_appliedEnvironment = 0;
+		eax::ReverbProperties g_appliedPreset{};  // Environment 0 = none applied yet
 		LONG g_appliedVolume = 1;  // Invalid level, so the first `ApplyTailVolume` always sets the volume
 
 		LONG DecibelsToLevel(float decibels) {
@@ -114,7 +114,8 @@ namespace sea::reverb {
 	}
 
 	// Loads the tail preset for the given environment into FX slot 2 and sets its volume.
-	// Loads the reverb into the slot on first use. Sets the preset only when the environment changed.
+	// Loads the reverb into the slot on first use. Sets the preset only if it differs from the applied one.
+	// A changed setting after a reload counts as a difference.
 	// Does nothing if `[Gunshots] bExteriorTail` is off.
 	//
 	// Thread: Audio
@@ -129,18 +130,18 @@ namespace sea::reverb {
 
 		ApplyTailVolume(propertySet);
 
-		if (environment == g_appliedEnvironment) {
+		const eax::ReverbProperties preset = DeriveTailPreset(environment);
+
+		if (preset == g_appliedPreset) {
 			return;
 		}
-
-		const eax::ReverbProperties preset = DeriveTailPreset(environment);
 
 		if (!eax::SetProperty(propertySet, eax::kFXSlot2, eax::kReverb_AllParameters, &preset, sizeof(preset),
 				"slot 2 reverb parameters")) {
 			return;
 		}
 
-		g_appliedEnvironment = environment;
+		g_appliedPreset = preset;
 
 		SEA_LOG("[Tail] Slot 2 <- %s tail (Decay %.2fs, Reflections Delay %.3fs, Diffusion %.2f, HF Ratio %.2f, "
 				"Late %ld mB)",

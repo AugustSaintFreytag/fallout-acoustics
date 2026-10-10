@@ -66,6 +66,8 @@ namespace sea::eax {
 
 	struct Vector {
 		float x, y, z;
+
+		bool operator==(const Vector&) const = default;
 	};
 
 	struct ReverbProperties {  // EAXREVERBPROPERTIES
@@ -93,6 +95,8 @@ namespace sea::eax {
 		float lfReference;
 		float roomRolloffFactor;
 		std::uint32_t flags;
+
+		bool operator==(const ReverbProperties&) const = default;
 	};
 
 	static_assert(sizeof(ReverbProperties) == 112);
