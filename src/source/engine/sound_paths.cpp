@@ -1,4 +1,4 @@
-#include "engine/gunfire_path.h"
+#include "engine/sound_paths.h"
 
 #include <cctype>
 #include <cstddef>
@@ -11,6 +11,7 @@ namespace sea::engine {
 		constexpr std::size_t kMaxPathLength = 260;
 
 		constexpr std::string_view kWeaponFolder = "sound\\fx\\wpn\\";
+		constexpr std::string_view kAmbienceFolder = "sound\\fx\\amb\\";
 		constexpr std::string_view kFireMarker = "_fire";
 		constexpr std::string_view kLoopMarker = "loop";
 		constexpr std::string_view kLoopSuffix = "_lp";
@@ -93,6 +94,15 @@ namespace sea::engine {
 		}
 
 		return GunfireKind::Shot;
+	}
+
+	// Checks if the given sound file path is in the ambience folder `sound\fx\amb\`.
+	// The folder holds regional ambience like insects and wind, and most placed ambient emitters.
+	bool IsAmbiencePath(const char* path) {
+		char buffer[kMaxPathLength];
+		const std::string_view normalized(buffer, NormalizePath(path, buffer));
+
+		return normalized.find(kAmbienceFolder) != std::string_view::npos;
 	}
 
 }

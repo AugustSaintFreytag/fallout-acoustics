@@ -83,7 +83,7 @@ namespace sea::reverb {
 
 		// If no space or space with type `None`, use fallback for cell kind.
 		if (environment == 0 || environment > kEnvironmentCount) {
-			const config::ReverbSettings& settings = config::Get().reverb;
+			const config::SpatializationSettings& settings = config::Get().spatialization;
 
 			if (isInterior) {
 				environment = settings.interiorFallback;

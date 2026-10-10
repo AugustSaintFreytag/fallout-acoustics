@@ -5,7 +5,7 @@
 #include "config/settings.h"
 #include "engine/addresses.h"
 #include "engine/environment.h"
-#include "engine/gunfire_path.h"
+#include "engine/sound_paths.h"
 #include "occlusion/apply.h"
 #include "reverb/listener.h"
 #include "reverb/presets.h"
@@ -59,27 +59,26 @@ namespace sea::reverb {
 			return true;
 		}
 
-		// Returns the preset of the given environment, driven harder by the tail settings in `[Gunshots]`.
-		// Adds `[Reverb] fRoomBoost` like slot 0. All values are clamped to the EAX ranges.
+		// Returns the preset of the given environment, driven harder by the tail settings in `[Impacts]`.
+		// All values are clamped to the EAX ranges.
 		eax::ReverbProperties DeriveTailPreset(std::uint32_t environment) {
 			const config::Settings& settings = config::Get();
-			const config::GunshotSettings& gunshots = settings.gunshots;
+			const config::ImpactSettings& impacts = settings.impacts;
 			eax::ReverbProperties preset = kPresets[environment - 1];
 
-			preset.decayTime = std::clamp(preset.decayTime * gunshots.tailDecayFactor, eax::kMinDecayTime, eax::kMaxDecayTime);
-			preset.decayHFRatio = std::clamp(preset.decayHFRatio * gunshots.tailHFRatioFactor, eax::kMinDecayHFRatio,
+			preset.decayTime = std::clamp(preset.decayTime * impacts.tailDecayFactor, eax::kMinDecayTime, eax::kMaxDecayTime);
+			preset.decayHFRatio = std::clamp(preset.decayHFRatio * impacts.tailHFRatioFactor, eax::kMinDecayHFRatio,
 				eax::kMaxDecayHFRatio);
-			preset.environmentDiffusion = std::clamp(preset.environmentDiffusion * gunshots.tailDiffusionFactor, 0.0f, 1.0f);
-			preset.reflectionsDelay = std::min(preset.reflectionsDelay + gunshots.tailReflectionsDelay, eax::kMaxReflectionsDelay);
-			preset.reverb = std::clamp(preset.reverb + DecibelsToLevel(gunshots.tailLateLevel), eax::kMinLevel, eax::kMaxReverb);
-			preset.room = std::clamp(preset.room + DecibelsToLevel(settings.reverb.roomBoost), eax::kMinLevel, 0L);
+			preset.environmentDiffusion = std::clamp(preset.environmentDiffusion * impacts.tailDiffusionFactor, 0.0f, 1.0f);
+			preset.reflectionsDelay = std::min(preset.reflectionsDelay + impacts.tailReflectionsDelay, eax::kMaxReflectionsDelay);
+			preset.reverb = std::clamp(preset.reverb + DecibelsToLevel(impacts.tailLateLevel), eax::kMinLevel, eax::kMaxReverb);
 
 			return preset;
 		}
 
 		// Sets the slot 2 volume to the configured wet level, or to silent while bypassed.
 		void ApplyTailVolume(IKsPropertySet* propertySet) {
-			LONG volume = eax::DecibelsToMillibels(config::Get().reverb.wetLevel);
+			LONG volume = eax::DecibelsToMillibels(config::Get().spatialization.wetLevel);
 
 			if (IsBypassed()) {
 				volume = eax::kMinLevel;
@@ -116,11 +115,11 @@ namespace sea::reverb {
 	// Loads the tail preset for the given environment into FX slot 2 and sets its volume.
 	// Loads the reverb into the slot on first use. Sets the preset only if it differs from the applied one.
 	// A changed setting after a reload counts as a difference.
-	// Does nothing if `[Gunshots] bExteriorTail` is off.
+	// Does nothing if `[Impacts] bExteriorTail` is off.
 	//
 	// Thread: Audio
 	void ApplyTailSlot(IKsPropertySet* propertySet, std::uint32_t environment) {
-		if (!config::Get().gunshots.exteriorTail || environment == 0) {
+		if (!config::Get().impacts.exteriorTail || environment == 0) {
 			return;
 		}
 
@@ -156,9 +155,9 @@ namespace sea::reverb {
 	// Thread: Audio
 	std::optional<float> GetTailSendLevel(void* gameSound) {
 		const config::Settings& settings = config::Get();
-		const config::GunshotSettings& gunshots = settings.gunshots;
+		const config::ImpactSettings& impacts = settings.impacts;
 
-		if (!gunshots.exteriorTail || g_slotState != SlotState::Loaded || !IsListenerInExterior()) {
+		if (!impacts.exteriorTail || g_slotState != SlotState::Loaded || !IsListenerInExterior()) {
 			return std::nullopt;
 		}
 
@@ -169,9 +168,9 @@ namespace sea::reverb {
 		}
 
 		const float distance = DistanceToListener(gameSound);
-		const float range = gunshots.tailFarDistance - gunshots.tailNearDistance;
-		const float position = std::clamp((distance - gunshots.tailNearDistance) / range, 0.0f, 1.0f);
-		const float sendLevel = gunshots.tailNearSend + (gunshots.tailFarSend - gunshots.tailNearSend) * position;
+		const float range = impacts.tailFarDistance - impacts.tailNearDistance;
+		const float position = std::clamp((distance - impacts.tailNearDistance) / range, 0.0f, 1.0f);
+		const float sendLevel = impacts.tailNearSend + (impacts.tailFarSend - impacts.tailNearSend) * position;
 
 		if (settings.debug.logGunshots) {
 			SEA_LOG("[Tail] %p at %.0f units, Send %.1f dB, Path=\"%.200s\"", gameSound, distance, sendLevel, path);

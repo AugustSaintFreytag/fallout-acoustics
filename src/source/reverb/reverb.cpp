@@ -19,6 +19,7 @@
 #include <atomic>
 #include <cmath>
 #include <optional>
+#include <unordered_set>
 
 namespace sea::reverb {
 
@@ -37,6 +38,11 @@ namespace sea::reverb {
 		
 		EaxState g_eaxState = EaxState::Unknown;
 		eax::ReverbProperties g_appliedPreset{};  // Environment 0 = none applied yet
+
+		constexpr std::size_t kMaxLeveledBuffers = 1024;
+
+		// Buffers that got a source level other than 0 dB. Only these need a reset to 0 dB on a later play.
+		std::unordered_set<std::uintptr_t> g_leveledBuffers;
 		LONG g_appliedVolume = 1;  // Invalid level, so the first `ApplyVolume` always sets the volume
 
 		// Adds the deferred flag if `[Debug] bDeferEaxSets` is on.
@@ -62,7 +68,6 @@ namespace sea::reverb {
 		}
 
 		// Loads the preset of the given environment into FX slot 0, if it differs from the applied one.
-		// Adds `fRoomBoost` to the room level of the preset. A changed setting after a reload counts as a difference.
 		// Returns true if the reverb parameters changed.
 		bool ApplyEnvironment(IKsPropertySet* propertySet, std::uint32_t environment) {
 			const config::Settings& settings = config::Get();
@@ -71,9 +76,7 @@ namespace sea::reverb {
 				return false;
 			}
 
-			eax::ReverbProperties preset = kPresets[environment - 1];
-			const LONG roomBoost = static_cast<LONG>(std::lround(settings.reverb.roomBoost * 100.0f));
-			preset.room = std::clamp(preset.room + roomBoost, eax::kMinLevel, 0L);
+			const eax::ReverbProperties& preset = kPresets[environment - 1];
 
 			if (preset == g_appliedPreset) {
 				return false;
@@ -99,25 +102,43 @@ namespace sea::reverb {
 			return true;
 		}
 
-		// Raises the direct level of a radio placed in the world by `[Reverb] fRadioBoost`.
-		// The set is deferred if `[Debug] bDeferEaxSets` is on. The last set in `ApplySource` commits it.
-		void ApplyRadioBoost(IKsPropertySet* propertySet, std::uint32_t soundFlags) {
-			const float boost = config::Get().reverb.radioBoost;
+		// Sets the direct and room level of a sound to its level from `[Sources]`, so dry and reverb change alike.
+		// Skips the sets for 0 dB unless the buffer got another level before. A reused buffer keeps its last level.
+		// The sets are deferred if `[Debug] bDeferEaxSets` is on. The last set in `ApplySource` commits them.
+		void ApplySourceLevel(IKsPropertySet* propertySet, void* gameSound, std::uint32_t soundFlags) {
+			const auto buffer = static_cast<std::uintptr_t>(Field<std::uint32_t>(gameSound, engine::kWin32Sound_Buffer));
+			const float level = GetSourceLevel(soundFlags, &Field<char>(gameSound, engine::kSound_FilePath));
 
-			if (boost <= 0.0f || !IsWorldRadio(soundFlags)) {
+			if (level == 0.0f && !g_leveledBuffers.contains(buffer)) {
 				return;
 			}
 
-			// OpenAL Soft lets the direct level go above 0 dB, up to +10 dB.
+			// OpenAL Soft lets both levels go above 0 dB, up to +10 dB.
 			// Reference at "al/source.cpp", "eax_create_direct_filter_param".
-			const LONG direct = std::min(static_cast<LONG>(std::lround(boost * 100.0f)), eax::kMaxDirect);
-			eax::SetProperty(propertySet, eax::kSource, Deferred(eax::kSource_Direct), &direct, sizeof(direct), "radio boost");
+			const LONG millibels = std::clamp(static_cast<LONG>(std::lround(level * 100.0f)), eax::kMinLevel,
+				eax::kMaxSourceLevel);
+
+			eax::SetProperty(propertySet, eax::kSource, Deferred(eax::kSource_Direct), &millibels, sizeof(millibels), "direct level");
+			eax::SetProperty(propertySet, eax::kSource, Deferred(eax::kSource_Room), &millibels, sizeof(millibels), "room level");
+
+			if (level == 0.0f) {
+				g_leveledBuffers.erase(buffer);
+
+				return;
+			}
+
+			// Released buffers are never removed, so the set is cleared when it grows too large.
+			if (g_leveledBuffers.size() >= kMaxLeveledBuffers) {
+				g_leveledBuffers.clear();
+			}
+
+			g_leveledBuffers.insert(buffer);
 		}
 
 		// Sets the primary FX slot volume to the configured wet level or to silent while bypassed. 
 		// Bails if volume is unchanged.
 		void ApplyVolume(IKsPropertySet* propertySet) {
-			LONG volume = eax::DecibelsToMillibels(config::Get().reverb.wetLevel);
+			LONG volume = eax::DecibelsToMillibels(config::Get().spatialization.wetLevel);
 
 			if (g_bypass.load(std::memory_order_relaxed)) {
 				volume = eax::kMinLevel;
@@ -249,7 +270,7 @@ namespace sea::reverb {
 	// 
 	// Thread: Audio
 	const char* OnSoundPlay(void* gameSound) {
-		if (!config::Get().reverb.enabled) {
+		if (!config::Get().spatialization.enabled) {
 			return "disabled";
 		}
 
@@ -282,7 +303,7 @@ namespace sea::reverb {
 		const std::uint32_t soundFlags = Field<std::uint32_t>(gameSound, engine::kSound_TypeFlags);
 		const Route route = Classify(soundFlags);
 		const bool keepSlot = config::Get().occlusion.enabled && occlusion::HasPosition(gameSound);
-		ApplyRadioBoost(propertySet, soundFlags);
+		ApplySourceLevel(propertySet, gameSound, soundFlags);
 		ApplySource(propertySet, route, keepSlot, GetTailSendLevel(gameSound));
 
 		// Read back after ApplySource so deferred values can be committed.

@@ -39,11 +39,11 @@ add_library(SaintsAcoustics SHARED
 	source/fixes/open_close_sounds.cpp
 
 	source/engine/environment.cpp
-	source/engine/gunfire_path.cpp
 	source/engine/equipment.cpp
 	source/engine/havok.cpp
 	source/engine/objects.cpp
 	source/engine/scene.cpp
+	source/engine/sound_paths.cpp
 	source/engine/sound_flags.cpp
 	source/engine/ui.cpp
 

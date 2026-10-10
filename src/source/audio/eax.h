@@ -40,6 +40,7 @@ namespace sea::eax {
 		kSource_ObstructionParameters = 2,  // ObstructionProperties
 		kSource_OcclusionParameters = 3,  // OcclusionProperties
 		kSource_Direct = 5,  // LONG, mB, [-10000, 1000]
+		kSource_Room = 7,  // LONG, mB, [-10000, 1000]. Level of all sends into FX slots with a reverb.
 		kSource_SendParameters = 23,  // SourceSendProperties[]
 		kSource_ActiveFXSlotID = 27,  // ActiveFXSlots
 	};
@@ -53,7 +54,7 @@ namespace sea::eax {
 	inline constexpr float kDefaultOcclusionDirectRatio = 1.0f;
 
 	inline constexpr LONG kMinLevel = -10000;  // mB, silence
-	inline constexpr LONG kMaxDirect = 1000;  // mB
+	inline constexpr LONG kMaxSourceLevel = 1000;  // mB, for `kSource_Direct` and `kSource_Room`
 
 	// Reverb property ranges. Reference at "al/eax/api.h", "EAXREVERB_MIN*" and "EAXREVERB_MAX*".
 	inline constexpr LONG kMaxReflections = 1000;  // mB

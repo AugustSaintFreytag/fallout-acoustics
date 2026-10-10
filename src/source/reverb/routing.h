@@ -17,4 +17,6 @@ namespace sea::reverb {
 
 	Route Classify(std::uint32_t soundFlags);
 
+	float GetSourceLevel(std::uint32_t soundFlags, const char* path);
+
 }

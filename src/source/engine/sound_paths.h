@@ -11,4 +11,6 @@ namespace sea::engine {
 
 	GunfireKind ClassifyGunfirePath(const char* path);
 
+	bool IsAmbiencePath(const char* path);
+
 }

@@ -111,85 +111,43 @@ namespace sea::config {
 			return engine::EnvironmentTypeFromName(text, fallback);
 		}
 
-		void LoadReverb(const char* iniPath, Settings& settings) {
-			ReverbSettings& reverb = settings.reverb;
-
-			reverb.enabled = ReadBool(iniPath, "Reverb", "bEnabled", reverb.enabled);
-			reverb.wetLevel = ReadFloat(iniPath, "Reverb", "fWetLevel", reverb.wetLevel);
-			reverb.roomBoost = ReadFloat(iniPath, "Reverb", "fRoomBoost", reverb.roomBoost);
-			reverb.radioBoost = ReadFloat(iniPath, "Reverb", "fRadioBoost", reverb.radioBoost);
-			reverb.interiorFallback = ReadEnvironment(iniPath, "Reverb", "sInteriorFallback", reverb.interiorFallback);
-			reverb.exteriorFallback = ReadEnvironment(iniPath, "Reverb", "sExteriorFallback", reverb.exteriorFallback);
-
-			// The reverb bypass key is in `[Reverb]`, but is stored with the other hotkeys.
-			HotkeySettings& hotkeys = settings.hotkeys;
-			hotkeys.bypassKey = ReadInt(iniPath, "Reverb", "iBypassKey", hotkeys.bypassKey);
+		// Reads a level in dB for a whole source, clamped to the EAX source range [-100, +10].
+		float ReadSourceLevel(const char* iniPath, const char* key, float fallback) {
+			return std::clamp(ReadFloat(iniPath, "Sources", key, fallback), -100.0f, 10.0f);
 		}
 
-		void LoadSends(const char* iniPath, Settings& settings) {
-			SendSettings& sends = settings.sends;
+		void LoadSources(const char* iniPath, Settings& settings) {
+			SourceSettings& sources = settings.sources;
 
-			sends.voice3D = ReadFloat(iniPath, "Sends", "fVoice3D", sends.voice3D);
-			sends.voice2D = ReadFloat(iniPath, "Sends", "fVoice2D", sends.voice2D);
-			sends.weapons = ReadFloat(iniPath, "Sends", "fWeapons", sends.weapons);
-			sends.footsteps = ReadFloat(iniPath, "Sends", "fFootsteps", sends.footsteps);
-			sends.loops3D = ReadFloat(iniPath, "Sends", "fLoops3D", sends.loops3D);
-			sends.loops2D = ReadFloat(iniPath, "Sends", "fLoops2D", sends.loops2D);
-			sends.region = ReadFloat(iniPath, "Sends", "fRegion", sends.region);
-			sends.radio3D = ReadFloat(iniPath, "Sends", "fRadio3D", sends.radio3D);
-			sends.default3D = ReadFloat(iniPath, "Sends", "fDefault3D", sends.default3D);
-			sends.default2D = ReadFloat(iniPath, "Sends", "fDefault2D", sends.default2D);
+			sources.radioLevel = ReadSourceLevel(iniPath, "fRadioLevel", sources.radioLevel);
+			sources.ambienceLevel = ReadSourceLevel(iniPath, "fAmbienceLevel", sources.ambienceLevel);
+
+			const float factor = ReadFloat(iniPath, "Sources", "fDistanceAttenuationFactor", sources.attenuationFactor);
+			sources.attenuationFactor = std::clamp(factor, 0.1f, 10.0f);
 		}
 
-		void LoadVoiceFilters(const char* iniPath, Settings& settings) {
-			VoiceFilterSettings& voiceFilters = settings.voiceFilters;
+		void LoadSpatialization(const char* iniPath, Settings& settings) {
+			SpatializationSettings& spatialization = settings.spatialization;
+			const char* section = "Spatialization";
 
-			voiceFilters.enabled = ReadBool(iniPath, "VoiceFilters", "bEnabled", voiceFilters.enabled);
-		}
+			spatialization.enabled = ReadBool(iniPath, section, "bEnabled", spatialization.enabled);
+			spatialization.wetLevel = ReadFloat(iniPath, section, "fWetLevel", spatialization.wetLevel);
+			spatialization.bypassKey = ReadInt(iniPath, section, "iBypassKey", spatialization.bypassKey);
+			spatialization.interiorFallback = ReadEnvironment(iniPath, section, "sInteriorFallback", spatialization.interiorFallback);
+			spatialization.exteriorFallback = ReadEnvironment(iniPath, section, "sExteriorFallback", spatialization.exteriorFallback);
 
-		void LoadGunshots(const char* iniPath, Settings& settings) {
-			GunshotSettings& gunshots = settings.gunshots;
+			SendLevels& sends = spatialization.sends;
 
-			gunshots.deverb = ReadBool(iniPath, "Gunshots", "bDeverb", gunshots.deverb);
-
-			const float keepFraction = ReadFloat(iniPath, "Gunshots", "fKeepFraction", gunshots.keepFraction);
-			gunshots.keepFraction = std::clamp(keepFraction, 0.05f, 1.0f);
-
-			const float fadeThreshold = ReadFloat(iniPath, "Gunshots", "fFadeThreshold", gunshots.fadeThreshold);
-			gunshots.fadeThreshold = std::max(fadeThreshold, 0.0f);
-
-			const float maxFadeDelay = ReadFloat(iniPath, "Gunshots", "fMaxFadeDelay", gunshots.maxFadeDelay);
-			gunshots.maxFadeDelay = std::max(maxFadeDelay, 0.0f);
-
-			const float decayRate = ReadFloat(iniPath, "Gunshots", "fDecayRate", gunshots.decayRate);
-			gunshots.decayRate = std::max(decayRate, 1.0f);
-
-			const float repeatLevel = ReadFloat(iniPath, "Gunshots", "fRepeatLevel", gunshots.repeatLevel);
-			gunshots.repeatLevel = std::max(repeatLevel, 0.0f);
-
-			gunshots.exteriorTail = ReadBool(iniPath, "Gunshots", "bExteriorTail", gunshots.exteriorTail);
-
-			const float tailDecayFactor = ReadFloat(iniPath, "Gunshots", "fTailDecayFactor", gunshots.tailDecayFactor);
-			gunshots.tailDecayFactor = std::clamp(tailDecayFactor, 0.1f, 10.0f);
-
-			const float tailReflectionsDelay = ReadFloat(iniPath, "Gunshots", "fTailReflectionsDelay", gunshots.tailReflectionsDelay);
-			gunshots.tailReflectionsDelay = std::clamp(tailReflectionsDelay, 0.0f, 0.3f);
-
-			const float tailDiffusionFactor = ReadFloat(iniPath, "Gunshots", "fTailDiffusionFactor", gunshots.tailDiffusionFactor);
-			gunshots.tailDiffusionFactor = std::clamp(tailDiffusionFactor, 0.0f, 10.0f);
-
-			const float tailHFRatioFactor = ReadFloat(iniPath, "Gunshots", "fTailHFRatioFactor", gunshots.tailHFRatioFactor);
-			gunshots.tailHFRatioFactor = std::clamp(tailHFRatioFactor, 0.0f, 10.0f);
-
-			gunshots.tailLateLevel = ReadFloat(iniPath, "Gunshots", "fTailLateLevel", gunshots.tailLateLevel);
-			gunshots.tailNearSend = ReadFloat(iniPath, "Gunshots", "fTailNearSend", gunshots.tailNearSend);
-			gunshots.tailFarSend = ReadFloat(iniPath, "Gunshots", "fTailFarSend", gunshots.tailFarSend);
-
-			const float tailNearDistance = ReadFloat(iniPath, "Gunshots", "fTailNearDistance", gunshots.tailNearDistance);
-			gunshots.tailNearDistance = std::max(tailNearDistance, 0.0f);
-
-			const float tailFarDistance = ReadFloat(iniPath, "Gunshots", "fTailFarDistance", gunshots.tailFarDistance);
-			gunshots.tailFarDistance = std::max(tailFarDistance, gunshots.tailNearDistance + 1.0f);
+			sends.voice3D = ReadFloat(iniPath, section, "fVoice3D", sends.voice3D);
+			sends.voice2D = ReadFloat(iniPath, section, "fVoice2D", sends.voice2D);
+			sends.weapons = ReadFloat(iniPath, section, "fWeapons", sends.weapons);
+			sends.footsteps = ReadFloat(iniPath, section, "fFootsteps", sends.footsteps);
+			sends.loops3D = ReadFloat(iniPath, section, "fLoops3D", sends.loops3D);
+			sends.loops2D = ReadFloat(iniPath, section, "fLoops2D", sends.loops2D);
+			sends.region = ReadFloat(iniPath, section, "fRegion", sends.region);
+			sends.radio3D = ReadFloat(iniPath, section, "fRadio3D", sends.radio3D);
+			sends.default3D = ReadFloat(iniPath, section, "fDefault3D", sends.default3D);
+			sends.default2D = ReadFloat(iniPath, section, "fDefault2D", sends.default2D);
 		}
 
 		void LoadOcclusion(const char* iniPath, Settings& settings) {
@@ -208,11 +166,55 @@ namespace sea::config {
 			occlusion.bypassKey = ReadInt(iniPath, "Occlusion", "iBypassKey", occlusion.bypassKey);
 		}
 
-		void LoadDistance(const char* iniPath, Settings& settings) {
-			DistanceSettings& distance = settings.distance;
+		void LoadImpacts(const char* iniPath, Settings& settings) {
+			ImpactSettings& impacts = settings.impacts;
 
-			const float factor = ReadFloat(iniPath, "Distance", "fDistanceAttenuationFactor", distance.attenuationFactor);
-			distance.attenuationFactor = std::clamp(factor, 0.1f, 10.0f);
+			impacts.deverb = ReadBool(iniPath, "Impacts", "bDeverb", impacts.deverb);
+
+			const float keepFraction = ReadFloat(iniPath, "Impacts", "fKeepFraction", impacts.keepFraction);
+			impacts.keepFraction = std::clamp(keepFraction, 0.05f, 1.0f);
+
+			const float fadeThreshold = ReadFloat(iniPath, "Impacts", "fFadeThreshold", impacts.fadeThreshold);
+			impacts.fadeThreshold = std::max(fadeThreshold, 0.0f);
+
+			const float maxFadeDelay = ReadFloat(iniPath, "Impacts", "fMaxFadeDelay", impacts.maxFadeDelay);
+			impacts.maxFadeDelay = std::max(maxFadeDelay, 0.0f);
+
+			const float decayRate = ReadFloat(iniPath, "Impacts", "fDecayRate", impacts.decayRate);
+			impacts.decayRate = std::max(decayRate, 1.0f);
+
+			const float repeatRejectLevel = ReadFloat(iniPath, "Impacts", "fRepeatRejectLevel", impacts.repeatRejectLevel);
+			impacts.repeatRejectLevel = std::max(repeatRejectLevel, 0.0f);
+
+			impacts.exteriorTail = ReadBool(iniPath, "Impacts", "bExteriorTail", impacts.exteriorTail);
+
+			const float tailDecayFactor = ReadFloat(iniPath, "Impacts", "fTailDecayFactor", impacts.tailDecayFactor);
+			impacts.tailDecayFactor = std::clamp(tailDecayFactor, 0.1f, 10.0f);
+
+			const float tailReflectionsDelay = ReadFloat(iniPath, "Impacts", "fTailReflectionsDelay", impacts.tailReflectionsDelay);
+			impacts.tailReflectionsDelay = std::clamp(tailReflectionsDelay, 0.0f, 0.3f);
+
+			const float tailDiffusionFactor = ReadFloat(iniPath, "Impacts", "fTailDiffusionFactor", impacts.tailDiffusionFactor);
+			impacts.tailDiffusionFactor = std::clamp(tailDiffusionFactor, 0.0f, 10.0f);
+
+			const float tailHFRatioFactor = ReadFloat(iniPath, "Impacts", "fTailHFRatioFactor", impacts.tailHFRatioFactor);
+			impacts.tailHFRatioFactor = std::clamp(tailHFRatioFactor, 0.0f, 10.0f);
+
+			impacts.tailLateLevel = ReadFloat(iniPath, "Impacts", "fTailLateLevel", impacts.tailLateLevel);
+			impacts.tailNearSend = ReadFloat(iniPath, "Impacts", "fTailNearSend", impacts.tailNearSend);
+			impacts.tailFarSend = ReadFloat(iniPath, "Impacts", "fTailFarSend", impacts.tailFarSend);
+
+			const float tailNearDistance = ReadFloat(iniPath, "Impacts", "fTailNearDistance", impacts.tailNearDistance);
+			impacts.tailNearDistance = std::max(tailNearDistance, 0.0f);
+
+			const float tailFarDistance = ReadFloat(iniPath, "Impacts", "fTailFarDistance", impacts.tailFarDistance);
+			impacts.tailFarDistance = std::max(tailFarDistance, impacts.tailNearDistance + 1.0f);
+		}
+
+		void LoadVocals(const char* iniPath, Settings& settings) {
+			VocalSettings& vocals = settings.vocals;
+
+			vocals.enabled = ReadBool(iniPath, "Vocals", "bEnabled", vocals.enabled);
 		}
 
 		void LoadFixes(const char* iniPath, Settings& settings) {
@@ -224,6 +226,7 @@ namespace sea::config {
 		void LoadDebug(const char* iniPath, Settings& settings) {
 			DebugSettings& debug = settings.debug;
 
+			debug.reloadKey = ReadInt(iniPath, "Debug", "iReloadKey", debug.reloadKey);
 			debug.forceEnvironment = ReadEnvironment(iniPath, "Debug", "sForceEnvironment", debug.forceEnvironment);
 			debug.readbackCount = static_cast<std::uint32_t>(ReadInt(iniPath, "Debug", "iReadbackCount", debug.readbackCount));
 			debug.logSoundPlay = ReadBool(iniPath, "Debug", "bLogSoundPlay", debug.logSoundPlay);
@@ -233,10 +236,6 @@ namespace sea::config {
 			debug.logRouteTiming = ReadBool(iniPath, "Debug", "bLogRouteTiming", debug.logRouteTiming);
 			debug.logVoiceCover = ReadBool(iniPath, "Debug", "bLogVoiceCover", debug.logVoiceCover);
 			debug.logGunshots = ReadBool(iniPath, "Debug", "bLogGunshots", debug.logGunshots);
-
-			// The reload key is in `[Debug]`, but is stored with the other hotkeys.
-			HotkeySettings& hotkeys = settings.hotkeys;
-			hotkeys.reloadKey = ReadInt(iniPath, "Debug", "iReloadKey", hotkeys.reloadKey);
 
 			debug.rayProbeKey = ReadInt(iniPath, "Debug", "iRayProbeKey", debug.rayProbeKey);
 			debug.rayProbeLayers = ReadLayerList(iniPath, "Debug", "sRayProbeLayers", debug.rayProbeLayers);
@@ -251,37 +250,23 @@ namespace sea::config {
 		}
 
 		void LogSettings(const Settings& settings) {
-			const ReverbSettings& reverb = settings.reverb;
-			const SendSettings& sends = settings.sends;
-			const DebugSettings& debug = settings.debug;
+			const SourceSettings& sources = settings.sources;
 
-			SEA_LOG("Config reverb: Enabled=%d Wet=%.1fdB RoomBoost=%.1fdB RadioBoost=%.1fdB InteriorFallback=%s "
-					"ExteriorFallback=%s BypassKey=0x%X",
-				reverb.enabled, reverb.wetLevel, reverb.roomBoost, reverb.radioBoost, engine::EnvironmentTypeName(reverb.interiorFallback),
-				engine::EnvironmentTypeName(reverb.exteriorFallback), settings.hotkeys.bypassKey);
+			SEA_LOG("Config sources: Radio=%.1fdB Ambience=%.1fdB AttenuationFactor=%.2f", sources.radioLevel,
+				sources.ambienceLevel, sources.attenuationFactor);
+
+			const SpatializationSettings& spatialization = settings.spatialization;
+			const SendLevels& sends = spatialization.sends;
+
+			SEA_LOG("Config spatialization: Enabled=%d Wet=%.1fdB BypassKey=0x%X InteriorFallback=%s ExteriorFallback=%s",
+				spatialization.enabled, spatialization.wetLevel, spatialization.bypassKey,
+				engine::EnvironmentTypeName(spatialization.interiorFallback),
+				engine::EnvironmentTypeName(spatialization.exteriorFallback));
 
 			SEA_LOG("Config sends (dB): Voice3D=%.1f Voice2D=%.1f Weapons=%.1f Footsteps=%.1f Loops3D=%.1f Loops2D=%.1f "
 					"Region=%.1f Radio3D=%.1f Default3D=%.1f Default2D=%.1f",
 				sends.voice3D, sends.voice2D, sends.weapons, sends.footsteps, sends.loops3D, sends.loops2D, sends.region,
 				sends.radio3D, sends.default3D, sends.default2D);
-
-			SEA_LOG("Config voice filters: Enabled=%d", settings.voiceFilters.enabled);
-
-			const GunshotSettings& gunshots = settings.gunshots;
-
-			SEA_LOG("Config gunshots: Deverb=%d Keep=%.2f FadeThreshold=%.1fdB MaxFadeDelay=%.3fs Decay=%.0fdB/s "
-					"RepeatLevel=%.1fdB",
-				gunshots.deverb, gunshots.keepFraction, gunshots.fadeThreshold, gunshots.maxFadeDelay,
-				gunshots.decayRate, gunshots.repeatLevel);
-
-			SEA_LOG("Config gunfire tail: Enabled=%d DecayFactor=%.2f ReflectionsDelay=+%.3fs DiffusionFactor=%.2f "
-					"HFRatioFactor=%.2f LateLevel=%+.1fdB Send=%.1fdB..%.1fdB Distance=%.0f..%.0f",
-				gunshots.exteriorTail, gunshots.tailDecayFactor, gunshots.tailReflectionsDelay, gunshots.tailDiffusionFactor,
-				gunshots.tailHFRatioFactor, gunshots.tailLateLevel, gunshots.tailNearSend, gunshots.tailFarSend,
-				gunshots.tailNearDistance, gunshots.tailFarDistance);
-
-			SEA_LOG("Config distance: AttenuationFactor=%.2f", settings.distance.attenuationFactor);
-			SEA_LOG("Config fixes: OpenCloseSounds=%d", settings.fixes.openCloseSounds);
 
 			const OcclusionSettings& occlusion = settings.occlusion;
 
@@ -291,17 +276,33 @@ namespace sea::config {
 				occlusion.maxDistance, occlusion.rayBudget, occlusion.refreshInterval, occlusion.attackTime,
 				occlusion.releaseTime, occlusion.bypassKey);
 
+			const ImpactSettings& impacts = settings.impacts;
+
+			SEA_LOG("Config impacts: Deverb=%d Keep=%.2f FadeThreshold=%.1fdB MaxFadeDelay=%.3fs Decay=%.0fdB/s "
+					"RepeatLevel=%.1fdB",
+				impacts.deverb, impacts.keepFraction, impacts.fadeThreshold, impacts.maxFadeDelay,
+				impacts.decayRate, impacts.repeatRejectLevel);
+
+			SEA_LOG("Config impacts tail: Enabled=%d DecayFactor=%.2f ReflectionsDelay=+%.3fs DiffusionFactor=%.2f "
+					"HFRatioFactor=%.2f LateLevel=%+.1fdB Send=%.1fdB..%.1fdB Distance=%.0f..%.0f",
+				impacts.exteriorTail, impacts.tailDecayFactor, impacts.tailReflectionsDelay, impacts.tailDiffusionFactor,
+				impacts.tailHFRatioFactor, impacts.tailLateLevel, impacts.tailNearSend, impacts.tailFarSend,
+				impacts.tailNearDistance, impacts.tailFarDistance);
+
+			SEA_LOG("Config vocals: Enabled=%d", settings.vocals.enabled);
+			SEA_LOG("Config fixes: OpenCloseSounds=%d", settings.fixes.openCloseSounds);
+
+			const DebugSettings& debug = settings.debug;
 			const char* forceEnvironmentName = "off";
 
 			if (debug.forceEnvironment) {
 				forceEnvironmentName = engine::EnvironmentTypeName(debug.forceEnvironment);
 			}
 
-			SEA_LOG("Config debug: Force=%s Readback=%u LogSoundPlay=%d LogSoundEnvironment=%d LayoutProbeCount=%u "
-					"DeferEaxSets=%d LogRouteTiming=%d LogVoiceCover=%d LogGunshots=%d ReloadKey=0x%X",
-				forceEnvironmentName, debug.readbackCount, debug.logSoundPlay, debug.logSoundEnvironment,
-				debug.layoutProbeCount, debug.deferEaxSets, debug.logRouteTiming, debug.logVoiceCover,
-				debug.logGunshots, settings.hotkeys.reloadKey);
+			SEA_LOG("Config debug: ReloadKey=0x%X Force=%s Readback=%u LogSoundPlay=%d LogSoundEnvironment=%d "
+					"LayoutProbeCount=%u DeferEaxSets=%d LogRouteTiming=%d LogVoiceCover=%d LogGunshots=%d",
+				debug.reloadKey, forceEnvironmentName, debug.readbackCount, debug.logSoundPlay, debug.logSoundEnvironment,
+				debug.layoutProbeCount, debug.deferEaxSets, debug.logRouteTiming, debug.logVoiceCover, debug.logGunshots);
 
 			char layerText[64] = "";
 			std::size_t layerTextLength = 0;
@@ -323,12 +324,11 @@ namespace sea::config {
 		}
 
 		void ReadSettings(const char* iniPath, Settings& settings) {
-			LoadReverb(iniPath, settings);
-			LoadSends(iniPath, settings);
-			LoadVoiceFilters(iniPath, settings);
-			LoadGunshots(iniPath, settings);
+			LoadSources(iniPath, settings);
+			LoadSpatialization(iniPath, settings);
 			LoadOcclusion(iniPath, settings);
-			LoadDistance(iniPath, settings);
+			LoadImpacts(iniPath, settings);
+			LoadVocals(iniPath, settings);
 			LoadFixes(iniPath, settings);
 			LoadDebug(iniPath, settings);
 		}
@@ -349,7 +349,7 @@ namespace sea::config {
 		// Logs each load-time switch that differs between the given previous and next settings.
 		void LogLoadTimeChanges(const Settings& previous, const Settings& next) {
 			const LoadTimeSwitch switches[] = {
-				{"[VoiceFilters] bEnabled", previous.voiceFilters.enabled, next.voiceFilters.enabled},
+				{"[Vocals] bEnabled", previous.vocals.enabled, next.vocals.enabled},
 				{"[Occlusion] bEnabled", previous.occlusion.enabled, next.occlusion.enabled},
 				{"[Fixes] bFixDoubleOpenCloseSounds", previous.fixes.openCloseSounds, next.fixes.openCloseSounds},
 				{"[Debug] bLogSoundEnvironment", previous.debug.logSoundEnvironment, next.debug.logSoundEnvironment},

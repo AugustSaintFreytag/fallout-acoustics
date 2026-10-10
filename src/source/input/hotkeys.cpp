@@ -37,12 +37,12 @@ namespace sea::input {
 			return keyIsPressedInThisFrame;
 		}
 
-		// Toggles the reverb bypass on `[Reverb] iBypassKey` and shows the new state.
+		// Toggles the reverb bypass on `[Spatialization] iBypassKey` and shows the new state.
 		void PollBypassKey() {
-			const config::Settings& settings = config::Get();
-			const int bypassKey = settings.hotkeys.bypassKey;
+			const config::SpatializationSettings& settings = config::Get().spatialization;
+			const int bypassKey = settings.bypassKey;
 
-			if (!bypassKey || !settings.reverb.enabled) {
+			if (!bypassKey || !settings.enabled) {
 				return;
 			}
 
@@ -116,7 +116,7 @@ namespace sea::input {
 
 		// Reloads the INI on `[Debug] iReloadKey` and shows a notification.
 		void PollReloadKey() {
-			const int reloadKey = config::Get().hotkeys.reloadKey;
+			const int reloadKey = config::Get().debug.reloadKey;
 
 			if (!reloadKey) {
 				return;

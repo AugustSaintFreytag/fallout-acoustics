@@ -5,7 +5,7 @@
 #include "config/settings.h"
 #include "effects/deverb.h"
 #include "engine/addresses.h"
-#include "engine/gunfire_path.h"
+#include "engine/sound_paths.h"
 #include "engine/sound_flags.h"
 #include "reverb/reverb.h"
 #include "utils/hash.h"
@@ -70,13 +70,13 @@ namespace sea::effects {
 			g_handledContents.insert(contentHash);
 		}
 
-		DeverbParameters ParametersFromSettings(const config::GunshotSettings& gunshots) {
+		DeverbParameters ParametersFromSettings(const config::ImpactSettings& impacts) {
 			return DeverbParameters{
-				.keepFraction = gunshots.keepFraction,
-				.fadeThreshold = gunshots.fadeThreshold,
-				.maxFadeDelay = gunshots.maxFadeDelay,
-				.decayRate = gunshots.decayRate,
-				.repeatLevel = gunshots.repeatLevel,
+				.keepFraction = impacts.keepFraction,
+				.fadeThreshold = impacts.fadeThreshold,
+				.maxFadeDelay = impacts.maxFadeDelay,
+				.decayRate = impacts.decayRate,
+				.repeatLevel = impacts.repeatRejectLevel,
 			};
 		}
 
@@ -135,7 +135,7 @@ namespace sea::effects {
 	void ProcessGunshotFilter(void* gameSound, bool loop) {
 		const config::Settings& settings = config::Get();
 
-		if (!settings.gunshots.deverb || !settings.reverb.enabled || reverb::IsBypassed() || !audio::IsDSOALLoaded()) {
+		if (!settings.impacts.deverb || !settings.spatialization.enabled || reverb::IsBypassed() || !audio::IsDSOALLoaded()) {
 			return;
 		}
 
@@ -160,7 +160,7 @@ namespace sea::effects {
 			return;
 		}
 
-		const DeverbParameters parameters = ParametersFromSettings(settings.gunshots);
+		const DeverbParameters parameters = ParametersFromSettings(settings.impacts);
 		ForgetHandledIfChanged(parameters);
 
 		const std::uint64_t contentHash = hash::Fnv1a(lock.audio, lock.audioBytes);
