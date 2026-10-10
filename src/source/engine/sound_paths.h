@@ -13,6 +13,8 @@ namespace sea::engine {
 
 	bool IsAmbiencePath(const char* path);
 
+	bool IsExplosionPath(const char* path);
+
 	bool IsHolotapeStartStopPath(const char* path);
 
 }

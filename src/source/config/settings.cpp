@@ -121,6 +121,7 @@ namespace sea::config {
 
 			sources.radioLevel = ReadSourceLevel(iniPath, "fRadioLevel", sources.radioLevel);
 			sources.ambienceLevel = ReadSourceLevel(iniPath, "fAmbienceLevel", sources.ambienceLevel);
+			sources.explosionsLevel = ReadSourceLevel(iniPath, "fExplosionsLevel", sources.explosionsLevel);
 
 			const float factor = ReadFloat(iniPath, "Sources", "fDistanceAttenuationFactor", sources.attenuationFactor);
 			sources.attenuationFactor = std::clamp(factor, 0.1f, 10.0f);
@@ -146,6 +147,7 @@ namespace sea::config {
 			sends.loops2D = ReadFloat(iniPath, section, "fLoops2D", sends.loops2D);
 			sends.region = ReadFloat(iniPath, section, "fRegion", sends.region);
 			sends.radio3D = ReadFloat(iniPath, section, "fRadio3D", sends.radio3D);
+			sends.radio2D = ReadFloat(iniPath, section, "fRadio2D", sends.radio2D);
 			sends.default3D = ReadFloat(iniPath, section, "fDefault3D", sends.default3D);
 			sends.default2D = ReadFloat(iniPath, section, "fDefault2D", sends.default2D);
 		}
@@ -253,8 +255,8 @@ namespace sea::config {
 		void LogSettings(const Settings& settings) {
 			const SourceSettings& sources = settings.sources;
 
-			SEA_LOG("Config sources: Radio=%.1fdB Ambience=%.1fdB AttenuationFactor=%.2f", sources.radioLevel,
-				sources.ambienceLevel, sources.attenuationFactor);
+			SEA_LOG("Config sources: Radio=%.1fdB Ambience=%.1fdB Explosions=%.1fdB AttenuationFactor=%.2f",
+				sources.radioLevel, sources.ambienceLevel, sources.explosionsLevel, sources.attenuationFactor);
 
 			const SpatializationSettings& spatialization = settings.spatialization;
 			const SendLevels& sends = spatialization.sends;
@@ -265,9 +267,9 @@ namespace sea::config {
 				engine::EnvironmentTypeName(spatialization.exteriorFallback));
 
 			SEA_LOG("Config sends (dB): Voice3D=%.1f Voice2D=%.1f Weapons=%.1f Footsteps=%.1f Loops3D=%.1f Loops2D=%.1f "
-					"Region=%.1f Radio3D=%.1f Default3D=%.1f Default2D=%.1f",
+					"Region=%.1f Radio3D=%.1f Radio2D=%.1f Default3D=%.1f Default2D=%.1f",
 				sends.voice3D, sends.voice2D, sends.weapons, sends.footsteps, sends.loops3D, sends.loops2D, sends.region,
-				sends.radio3D, sends.default3D, sends.default2D);
+				sends.radio3D, sends.radio2D, sends.default3D, sends.default2D);
 
 			const OcclusionSettings& occlusion = settings.occlusion;
 

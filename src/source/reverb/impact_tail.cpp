@@ -1,4 +1,4 @@
-#include "reverb/gunfire_tail.h"
+#include "reverb/impact_tail.h"
 
 #include "audio/eax.h"
 #include "audio/eax_property.h"
@@ -48,13 +48,13 @@ namespace sea::reverb {
 			if (!eax::SetProperty(propertySet, eax::kFXSlot2, eax::kFXSlot_LoadEffect, &eax::kReverbEffect, sizeof(GUID),
 					"slot 2 load reverb")) {
 				g_slotState = SlotState::Failed;
-				SEA_LOG("[Tail] FX slot 2 does not accept a reverb. Gunfire tail is off.");
+				SEA_LOG("[Tail] FX slot 2 does not accept a reverb. Impact tail is off.");
 
 				return false;
 			}
 
 			g_slotState = SlotState::Loaded;
-			SEA_LOG("[Tail] FX slot 2 holds a reverb for the gunfire tail.");
+			SEA_LOG("[Tail] FX slot 2 holds a reverb for the impact tail.");
 
 			return true;
 		}
@@ -148,8 +148,8 @@ namespace sea::reverb {
 			preset.environmentDiffusion, preset.decayHFRatio, preset.reverb);
 	}
 
-	// Returns the send level into the gunfire tail (FX slot 2) for the given sound, in dB.
-	// Only gunfire in exteriors gets a level, shots and fire loops alike. Others get none.
+	// Returns the send level into the impact tail (FX slot 2) for the given sound, in dB.
+	// Only gunfire and explosions in exteriors get a level, shots and fire loops alike. Others get none.
 	// The level rises from the near to the far send between the near and far distance.
 	//
 	// Thread: Audio
@@ -163,7 +163,9 @@ namespace sea::reverb {
 
 		const char* path = &Field<char>(gameSound, engine::kSound_FilePath);
 
-		if (engine::ClassifyGunfirePath(path) == engine::GunfireKind::None) {
+		const bool isGunfire = engine::ClassifyGunfirePath(path) != engine::GunfireKind::None;
+
+		if (!isGunfire && !engine::IsExplosionPath(path)) {
 			return std::nullopt;
 		}
 

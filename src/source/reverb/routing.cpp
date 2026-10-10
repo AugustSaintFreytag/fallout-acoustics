@@ -19,12 +19,16 @@ namespace sea::reverb {
 
 		const config::SendLevels& sends = config::Get().spatialization.sends;
 
-		// Other radio sounds, like the Pip-Boy radio, are excluded below.
+		// Radio checks come before the exclusion of system sounds and music below.
 		if (IsWorldRadio(soundFlags)) {
 			return {"radio3D", sends.radio3D};
 		}
 
-		if (soundFlags & (kSound_SystemSound | kSound_Music | kSound_Radio)) {
+		if (soundFlags & kSound_Radio) {
+			return {"radio2D", sends.radio2D};
+		}
+
+		if (soundFlags & (kSound_SystemSound | kSound_Music)) {
 			return {"excluded", config::kSendOff};
 		}
 
@@ -72,6 +76,10 @@ namespace sea::reverb {
 
 		if (IsWorldRadio(soundFlags)) {
 			return sources.radioLevel;
+		}
+
+		if (engine::IsExplosionPath(path)) {
+			return sources.explosionsLevel;
 		}
 
 		if ((soundFlags & engine::kSound_Region) || engine::IsAmbiencePath(path)) {

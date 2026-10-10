@@ -12,6 +12,7 @@ namespace sea::engine {
 
 		constexpr std::string_view kWeaponFolder = "sound\\fx\\wpn\\";
 		constexpr std::string_view kAmbienceFolder = "sound\\fx\\amb\\";
+		constexpr std::string_view kExplosionFolder = "sound\\fx\\fx\\explosion\\";
 		constexpr std::string_view kFireMarker = "_fire";
 		constexpr std::string_view kLoopMarker = "loop";
 		constexpr std::string_view kLoopSuffix = "_lp";
@@ -107,6 +108,15 @@ namespace sea::engine {
 		const std::string_view normalized(buffer, NormalizePath(path, buffer));
 
 		return normalized.find(kAmbienceFolder) != std::string_view::npos;
+	}
+
+	// Checks if the given sound file path is in the explosion folder `sound\fx\fx\explosion\`.
+	// Vanilla, DLC and TTW keep all explosion sounds there: grenades, mines, artillery, robots and nukes.
+	bool IsExplosionPath(const char* path) {
+		char buffer[kMaxPathLength];
+		const std::string_view normalized(buffer, NormalizePath(path, buffer));
+
+		return normalized.find(kExplosionFolder) != std::string_view::npos;
 	}
 
 	// Checks if the given sound file path is the Pip-Boy holotape start or stop sound (`UIPipBoyHolotapeStart`,

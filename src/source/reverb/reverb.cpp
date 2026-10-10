@@ -7,7 +7,7 @@
 #include "debug/eax_readback.h"
 #include "engine/addresses.h"
 #include "engine/environment.h"
-#include "reverb/gunfire_tail.h"
+#include "reverb/impact_tail.h"
 #include "reverb/listener.h"
 #include "reverb/presets.h"
 #include "reverb/routing.h"
@@ -161,7 +161,7 @@ namespace sea::reverb {
 			}
 		}
 
-		// Sets FX slot 0 to the listener environment and the wet level. Sets the gunfire tail in FX slot 2 to match.
+		// Sets FX slot 0 to the listener environment and the wet level. Sets the impact tail in FX slot 2 to match.
 		// Returns true if reverb parameters of slot 0 changed.
 		bool ApplySlot(IKsPropertySet* propertySet) {
 			const std::uint32_t environment = ResolveEnvironment();
@@ -173,7 +173,7 @@ namespace sea::reverb {
 		}
 
 		// Sets the active FX slots of a sound and its send levels. Slot 0 gets the route's send level.
-		// Slot 2 is active only with a tail send level (gunfire in exteriors).
+		// Slot 2 is active only with a tail send level (gunfire and explosions in exteriors).
 		// A sound with its send set to off (muted) and no tail does not get a slot.
 		//
 		// `keepSlot`: the sound can be occluded. OpenAL Soft applies source occlusion to the direct path only while

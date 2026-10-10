@@ -60,7 +60,7 @@ add_library(SaintsAcoustics SHARED
 	source/occlusion/probe.cpp
 	source/occlusion/registry.cpp
 
-	source/reverb/gunfire_tail.cpp
+	source/reverb/impact_tail.cpp
 	source/reverb/listener.cpp
 	source/reverb/reverb.cpp
 	source/reverb/routing.cpp

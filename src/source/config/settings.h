@@ -14,6 +14,7 @@ namespace sea::config {
 		// Levels in dB, [-100, +10]. 0 = unchanged.
 		float radioLevel = 0.0f;  // Radios placed in the world
 		float ambienceLevel = 0.0f;  // Region sounds and sounds in `sound\fx\amb\`
+		float explosionsLevel = 0.0f;  // Sounds in `sound\fx\fx\explosion\`
 
 		// Factor on the min and max attenuation distance of each 3D sound. 2.0 = sounds carry twice as far.
 		float attenuationFactor = 1.0f;
@@ -29,6 +30,7 @@ namespace sea::config {
 		float loops2D = kSendOff;
 		float region = kSendOff;
 		float radio3D = 0.0f;
+		float radio2D = kSendOff;  // Pip-Boy radio
 		float default3D = 0.0f;
 		float default2D = 0.0f;
 	};
@@ -72,7 +74,7 @@ namespace sea::config {
 		int bypassKey = 0;  // Virtual-key code that turns occlusion off and on, 0 = no key
 	};
 
-	// Properties for loud sounds: removing baked-in reverb from gunshots and the exterior gunfire tail.
+	// Properties for loud sounds: removing baked-in reverb from gunshots and the exterior tail for gunfire and explosions.
 	struct ImpactSettings {
 		bool deverb = false;
 
@@ -82,7 +84,7 @@ namespace sea::config {
 		float decayRate = 120.0f;  // dB per second
 		float repeatRejectLevel = 6.0f;  // dB below the peak. A later peak at this level counts as another shot.
 
-		// Second reverb (FX slot 2) for gunfire in exteriors, derived from the listener environment preset.
+		// Second reverb (FX slot 2) for gunfire and explosions in exteriors, derived from the listener environment preset.
 		bool exteriorTail = false;
 		float tailDecayFactor = 2.0f;
 		float tailReflectionsDelay = 0.1f;  // Seconds, added
@@ -90,7 +92,7 @@ namespace sea::config {
 		float tailHFRatioFactor = 0.7f;
 		float tailLateLevel = 12.0f;  // dB, added to the late reverb level
 
-		// Send into the tail by distance between listener and gunfire. 2D gunfire uses the near level.
+		// Send into the tail by distance between listener and sound. 2D sounds use the near level.
 		float tailNearSend = -9.0f;  // dB
 		float tailFarSend = 0.0f;  // dB
 		float tailNearDistance = 1024.0f;  // Game units
