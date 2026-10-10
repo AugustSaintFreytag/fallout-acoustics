@@ -7,6 +7,7 @@
 #include "debug/eax_readback.h"
 #include "engine/addresses.h"
 #include "engine/environment.h"
+#include "engine/holotapes.h"
 #include "reverb/impact_tail.h"
 #include "reverb/listener.h"
 #include "reverb/presets.h"
@@ -301,7 +302,7 @@ namespace sea::reverb {
 		const bool environmentChanged = ApplySlot(propertySet);
 
 		const std::uint32_t soundFlags = Field<std::uint32_t>(gameSound, engine::kSound_TypeFlags);
-		const Route route = Classify(soundFlags);
+		const Route route = Classify(soundFlags, engine::IsHolotapeSound(gameSound));
 		const bool keepSlot = config::Get().occlusion.enabled && occlusion::HasPosition(gameSound);
 		ApplySourceLevel(propertySet, gameSound, soundFlags);
 		ApplySource(propertySet, route, keepSlot, GetTailSendLevel(gameSound));

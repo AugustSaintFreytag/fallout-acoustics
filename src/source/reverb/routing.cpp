@@ -14,7 +14,8 @@ namespace sea::reverb {
 	}
 
 	// Picks the send category of a sound from its `SoundFlag` bits.
-	Route Classify(std::uint32_t soundFlags) {
+	// Holotapes play through the Pip-Boy speaker and follow the Pip-Boy radio.
+	Route Classify(std::uint32_t soundFlags, bool isHolotape) {
 		using namespace engine;
 
 		const config::SendLevels& sends = config::Get().spatialization.sends;
@@ -24,7 +25,7 @@ namespace sea::reverb {
 			return {"radio3D", sends.radio3D};
 		}
 
-		if (soundFlags & kSound_Radio) {
+		if ((soundFlags & kSound_Radio) || isHolotape) {
 			return {"radio2D", sends.radio2D};
 		}
 

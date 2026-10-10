@@ -32,16 +32,20 @@ add_library(SaintsAcoustics SHARED
 	source/effects/deverb.cpp
 	source/effects/distance.cpp
 	source/effects/gunshot_filter.cpp
+	source/effects/holotape_filter.cpp
 	source/effects/mask_filter.cpp
+	source/effects/tape_filter.cpp
 	source/effects/voice_cover.cpp
 	source/effects/voice_filter.cpp
 
+	source/fixes/holotape_duration.cpp
 	source/fixes/load_holotape_sounds.cpp
 	source/fixes/open_close_sounds.cpp
 
 	source/engine/environment.cpp
 	source/engine/equipment.cpp
 	source/engine/havok.cpp
+	source/engine/holotapes.cpp
 	source/engine/objects.cpp
 	source/engine/scene.cpp
 	source/engine/sound_paths.cpp

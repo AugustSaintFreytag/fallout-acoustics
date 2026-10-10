@@ -168,6 +168,15 @@ namespace sea::engine {
 	constexpr std::uint8_t kExtraType_CellAcousticSpace = 0x81;   // (JIP)
 	constexpr std::uintptr_t kExtraCellAcousticSpace_Space = 0x0C;
 
+	// MapMenu (Pip-Boy data tab). Owns holotape playback. `MapMenu::UpdateHolotape` is at 0x79A660. (EXE)
+	// Voice notes play each line with flags 0x105 (2D, Voice, OneShot). JIP's `bVoiceModulationFix` adds Modulated. (EXE: 0x7974C9)
+	constexpr std::uintptr_t kMapMenuSingleton = 0x11DA368;  // MapMenu* (JIP, JG, ST)
+	constexpr std::uintptr_t kMapMenu_HolotapeSounds = 0x098;  // BSSimpleList<BSSoundHandle>, first node inline (JG; EXE)
+	constexpr std::uintptr_t kMapMenu_HolotapeTotalTime = 0x0C0;  // float, ms. Line durations + 500 ms per gap, set once when all lines are loaded (EXE: 0x79A784)
+
+	// Node of a BSSimpleList<BSSoundHandle>. The handle is at +0. (EXE: 0x84E3A0)
+	constexpr std::uintptr_t kSoundHandleNode_Next = 0x0C;
+
 	// BGSAcousticSpace (ASPC)
 	constexpr std::uintptr_t kAspc_IsInterior = 0x30;  // UInt8 (JIP, JG)
 	constexpr std::uintptr_t kAspc_EnvironmentType = 0x4C;  // UInt32, ANAM value (JIP, JG)
@@ -183,6 +192,7 @@ namespace sea::engine {
 	constexpr std::uintptr_t kSound_ID = 0x004;
 	constexpr std::uintptr_t kSound_TypeFlags = 0x008;  // SoundFlag bits (JG, JIP)
 	constexpr std::uintptr_t kSound_StateFlags = 0x010;
+	constexpr std::uintptr_t kSound_Duration = 0x014;  // UInt32, ms (JIP)
 	constexpr std::uintptr_t kSound_StaticAttenuation = 0x018;  // UInt16, unit not verified (JIP: "dB * -1000")
 	constexpr std::uintptr_t kSound_ReverbAttenuation = 0x01A;  // UInt16 (JG: usReverbAttenuation)
 	constexpr std::uintptr_t kSound_FilePath = 0x036;  // char[]

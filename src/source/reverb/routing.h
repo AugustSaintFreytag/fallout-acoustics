@@ -15,7 +15,7 @@ namespace sea::reverb {
 
 	bool IsWorldRadio(std::uint32_t soundFlags);
 
-	Route Classify(std::uint32_t soundFlags);
+	Route Classify(std::uint32_t soundFlags, bool isHolotape);
 
 	float GetSourceLevel(std::uint32_t soundFlags, const char* path);
 
