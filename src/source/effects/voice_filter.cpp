@@ -3,9 +3,11 @@
 #include "audio/directsound.h"
 #include "audio/pcm_buffer.h"
 #include "config/settings.h"
+#include "effects/filtered_buffers.h"
 #include "effects/mask_filter.h"
 #include "effects/voice_cover.h"
 #include "engine/addresses.h"
+#include "engine/holotapes.h"
 #include "engine/sound_flags.h"
 #include "reverb/reverb.h"
 #include "utils/hash.h"
@@ -14,8 +16,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <mutex>
-#include <unordered_map>
 
 namespace sea::effects {
 
@@ -62,15 +62,8 @@ namespace sea::effects {
 			.gainLevel = 1.0,
 		};
 
-		constexpr std::size_t kMaxTrackedBuffers = 512;
-
-		// Content hash of each buffer after filtering.
-		// The same hash at the next Play means that the engine did not write new data, 
-		// so buffer can be assumed to already be filtered.
-		std::mutex g_lock;
-		std::unordered_map<std::uintptr_t, std::uint64_t> g_filteredContent;
-
 		// Thread: Audio
+		FilteredBuffers g_filteredBuffers;
 		bool g_unsupportedFormatLogged = false;
 
 		const MaskFilterPreset* PresetFor(VoiceCover cover) {
@@ -87,28 +80,6 @@ namespace sea::effects {
 			default:
 				return nullptr;
 			}
-		}
-
-		bool IsAlreadyFiltered(std::uintptr_t buffer, std::uint64_t contentHash) {
-			std::lock_guard guard(g_lock);
-			const auto entry = g_filteredContent.find(buffer);
-
-			if (entry == g_filteredContent.end()) {
-				return false;
-			}
-
-			return entry->second == contentHash;
-		}
-
-		void RememberFiltered(std::uintptr_t buffer, std::uint64_t contentHash) {
-			std::lock_guard guard(g_lock);
-
-			// Released buffers are never removed, so the map is cleared when it grows too large.
-			if (g_filteredContent.size() >= kMaxTrackedBuffers) {
-				g_filteredContent.clear();
-			}
-
-			g_filteredContent[buffer] = contentHash;
 		}
 
 		void LogUnsupportedFormat(const WAVEFORMATEX& format) {
@@ -140,6 +111,11 @@ namespace sea::effects {
 			return;
 		}
 
+		// Holotapes get the tape filter instead, also where JIP marks them as Modulated.
+		if (engine::IsHolotapeSound(gameSound)) {
+			return;
+		}
+
 		const VoiceCover cover = VoiceCoverFromFlags(soundFlags);
 		const MaskFilterPreset* preset = PresetFor(cover);
 
@@ -161,7 +137,7 @@ namespace sea::effects {
 		const auto bufferAddress = reinterpret_cast<std::uintptr_t>(lock.buffer);
 
 		// Engine reuses buffers. Filter only if the content changed since the last filter.
-		if (IsAlreadyFiltered(bufferAddress, hash::Fnv1a(lock.audio, lock.audioBytes))) {
+		if (g_filteredBuffers.Contains(bufferAddress, hash::Fnv1a(lock.audio, lock.audioBytes))) {
 			audio::UnlockPcmBuffer(lock);
 
 			return;
@@ -172,7 +148,7 @@ namespace sea::effects {
 		const double gainDb = ApplyMaskFilter(lock.Samples(), frameCount, format.nChannels,
 			static_cast<double>(format.nSamplesPerSec), *preset);
 
-		RememberFiltered(bufferAddress, hash::Fnv1a(lock.audio, lock.audioBytes));
+		g_filteredBuffers.Remember(bufferAddress, hash::Fnv1a(lock.audio, lock.audioBytes));
 		audio::UnlockPcmBuffer(lock);
 
 		const double durationSeconds = static_cast<double>(frameCount) / format.nSamplesPerSec;
