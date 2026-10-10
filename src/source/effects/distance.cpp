@@ -19,7 +19,7 @@ namespace sea::effects {
 		std::size_t g_nextScaledIndex = 0;
 
 		bool IsScaledFactor() {
-			return config::Get().distance.attenuationFactor != 1.0f;
+			return config::Get().sources.attenuationFactor != 1.0f;
 		}
 
 		bool HasDistanceAttenuation(void* sound) {
@@ -46,7 +46,7 @@ namespace sea::effects {
 
 	}
 
-	// Multiplies the min and max attenuation distance of a 3D sound by `[Distance] fDistanceAttenuationFactor`.
+	// Multiplies the min and max attenuation distance of a 3D sound by `[Sources] fDistanceAttenuationFactor`.
 	// Called before the original `Play`. Scales each sound once.
 	//
 	// Thread: Audio
@@ -63,7 +63,7 @@ namespace sea::effects {
 
 		RememberScaled(soundId);
 
-		const float factor = config::Get().distance.attenuationFactor;
+		const float factor = config::Get().sources.attenuationFactor;
 		Field<float>(sound, engine::kSound_MinAttenuationDistance) *= factor;
 		Field<float>(sound, engine::kSound_MaxAttenuationDistance) *= factor;
 	}

@@ -2,6 +2,7 @@
 
 #include "config/settings.h"
 #include "engine/sound_flags.h"
+#include "engine/sound_paths.h"
 
 namespace sea::reverb {
 
@@ -16,7 +17,7 @@ namespace sea::reverb {
 	Route Classify(std::uint32_t soundFlags) {
 		using namespace engine;
 
-		const config::SendSettings& sends = config::Get().sends;
+		const config::SendLevels& sends = config::Get().spatialization.sends;
 
 		// Other radio sounds, like the Pip-Boy radio, are excluded below.
 		if (IsWorldRadio(soundFlags)) {
@@ -62,6 +63,22 @@ namespace sea::reverb {
 		}
 
 		return {"default3D", sends.default3D};
+	}
+
+	// Returns the `[Sources]` level of a sound in dB, for dry and reverb alike. 0 = unchanged.
+	// Ambience is a region sound or a sound in the ambience folder. Region flag on regional insects not verified.
+	float GetSourceLevel(std::uint32_t soundFlags, const char* path) {
+		const config::SourceSettings& sources = config::Get().sources;
+
+		if (IsWorldRadio(soundFlags)) {
+			return sources.radioLevel;
+		}
+
+		if ((soundFlags & engine::kSound_Region) || engine::IsAmbiencePath(path)) {
+			return sources.ambienceLevel;
+		}
+
+		return 0.0f;
 	}
 
 }

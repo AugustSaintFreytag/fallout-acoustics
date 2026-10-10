@@ -1,15 +1,18 @@
 #include "effects/voice_filter.h"
 
 #include "audio/directsound.h"
+#include "audio/pcm_buffer.h"
 #include "config/settings.h"
 #include "effects/mask_filter.h"
 #include "effects/voice_cover.h"
 #include "engine/addresses.h"
 #include "engine/sound_flags.h"
 #include "reverb/reverb.h"
+#include "utils/hash.h"
 #include "utils/log.h"
 #include "utils/memory.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <mutex>
 #include <unordered_map>
@@ -65,7 +68,7 @@ namespace sea::effects {
 		// The same hash at the next Play means that the engine did not write new data, 
 		// so buffer can be assumed to already be filtered.
 		std::mutex g_lock;
-		std::unordered_map<std::uint32_t, std::uint64_t> g_filteredContent;
+		std::unordered_map<std::uintptr_t, std::uint64_t> g_filteredContent;
 
 		// Thread: Audio
 		bool g_unsupportedFormatLogged = false;
@@ -86,20 +89,7 @@ namespace sea::effects {
 			}
 		}
 
-		// Returns the FNV-1a hash (64 bit) of a block of memory.
-		std::uint64_t HashContent(const void* data, std::size_t size) {
-			const auto* bytes = static_cast<const std::uint8_t*>(data);
-			std::uint64_t hash = 0xCBF29CE484222325ull;
-
-			for (std::size_t index = 0; index < size; ++index) {
-				hash ^= bytes[index];
-				hash *= 0x100000001B3ull;
-			}
-
-			return hash;
-		}
-
-		bool IsAlreadyFiltered(std::uint32_t buffer, std::uint64_t contentHash) {
+		bool IsAlreadyFiltered(std::uintptr_t buffer, std::uint64_t contentHash) {
 			std::lock_guard guard(g_lock);
 			const auto entry = g_filteredContent.find(buffer);
 
@@ -110,7 +100,7 @@ namespace sea::effects {
 			return entry->second == contentHash;
 		}
 
-		void RememberFiltered(std::uint32_t buffer, std::uint64_t contentHash) {
+		void RememberFiltered(std::uintptr_t buffer, std::uint64_t contentHash) {
 			std::lock_guard guard(g_lock);
 
 			// Released buffers are never removed, so the map is cleared when it grows too large.
@@ -119,15 +109,6 @@ namespace sea::effects {
 			}
 
 			g_filteredContent[buffer] = contentHash;
-		}
-
-		// Checks if the format is 16-bit PCM with packed samples.
-		bool IsSupportedFormat(const WAVEFORMATEX& format) {
-			if (format.wFormatTag != WAVE_FORMAT_PCM || format.wBitsPerSample != 16 || format.nChannels == 0) {
-				return false;
-			}
-
-			return format.nBlockAlign == format.nChannels * 2;
 		}
 
 		void LogUnsupportedFormat(const WAVEFORMATEX& format) {
@@ -148,7 +129,7 @@ namespace sea::effects {
 	//
 	// Thread: Audio
 	void ProcessVoiceFilter(void* gameSound) {
-		if (!config::Get().voiceFilters.enabled || reverb::IsBypassed() || !audio::IsDSOALLoaded()) {
+		if (!config::Get().vocals.enabled || reverb::IsBypassed() || !audio::IsDSOALLoaded()) {
 			return;
 		}
 
@@ -166,43 +147,33 @@ namespace sea::effects {
 			return;
 		}
 
-		const std::uint32_t bufferAddress = Field<std::uint32_t>(gameSound, engine::kWin32Sound_Buffer);
+		audio::PcmLock lock;
+		const audio::PcmLockResult lockResult = audio::LockPcmBuffer(gameSound, lock);
 
-		if (!audio::IsDSoundObject(bufferAddress)) {
+		if (lockResult == audio::PcmLockResult::UnsupportedFormat) {
+			LogUnsupportedFormat(lock.format);
+		}
+
+		if (lockResult != audio::PcmLockResult::Locked) {
 			return;
 		}
 
-		auto* buffer = reinterpret_cast<IDirectSoundBuffer8*>(bufferAddress);
-		WAVEFORMATEX format{};
-
-		if (FAILED(buffer->GetFormat(&format, sizeof(format), nullptr)) || !IsSupportedFormat(format)) {
-			LogUnsupportedFormat(format);
-
-			return;
-		}
-
-		void* audio = nullptr;
-		DWORD audioBytes = 0;
-		void* wrappedAudio = nullptr;
-		DWORD wrappedBytes = 0;
-
-		if (FAILED(buffer->Lock(0, 0, &audio, &audioBytes, &wrappedAudio, &wrappedBytes, DSBLOCK_ENTIREBUFFER)) || !audio) {
-			return;
-		}
+		const auto bufferAddress = reinterpret_cast<std::uintptr_t>(lock.buffer);
 
 		// Engine reuses buffers. Filter only if the content changed since the last filter.
-		if (IsAlreadyFiltered(bufferAddress, HashContent(audio, audioBytes))) {
-			buffer->Unlock(audio, audioBytes, wrappedAudio, wrappedBytes);
+		if (IsAlreadyFiltered(bufferAddress, hash::Fnv1a(lock.audio, lock.audioBytes))) {
+			audio::UnlockPcmBuffer(lock);
 
 			return;
 		}
 
-		const std::size_t frameCount = audioBytes / format.nBlockAlign;
-		const double gainDb = ApplyMaskFilter(static_cast<std::int16_t*>(audio), frameCount, format.nChannels,
+		const WAVEFORMATEX& format = lock.format;
+		const std::size_t frameCount = lock.FrameCount();
+		const double gainDb = ApplyMaskFilter(lock.Samples(), frameCount, format.nChannels,
 			static_cast<double>(format.nSamplesPerSec), *preset);
 
-		RememberFiltered(bufferAddress, HashContent(audio, audioBytes));
-		buffer->Unlock(audio, audioBytes, wrappedAudio, wrappedBytes);
+		RememberFiltered(bufferAddress, hash::Fnv1a(lock.audio, lock.audioBytes));
+		audio::UnlockPcmBuffer(lock);
 
 		const double durationSeconds = static_cast<double>(frameCount) / format.nSamplesPerSec;
 

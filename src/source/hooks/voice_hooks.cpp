@@ -45,13 +45,13 @@ namespace sea::hooks {
 	}
 
 	// Replaces the vanilla voice modulation check in `Actor::VoiceSoundFunction` with the cover classification.
-	// Does nothing if `[VoiceFilters] bEnabled=0`. Returns false if the call site is not the expected call.
+	// Does nothing if `[Vocals] bEnabled=0`. Returns false if the call site is not the expected call.
 	//
 	// Called once from `NVSEPlugin_Load` after `config::Load`.
 	//
 	// Thread: Main (load time only)
 	bool InstallVoiceHooks() {
-		if (!config::Get().voiceFilters.enabled) {
+		if (!config::Get().vocals.enabled) {
 			return true;
 		}
 

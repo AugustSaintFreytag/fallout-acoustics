@@ -7,29 +7,20 @@
 namespace sea::config {
 
 	// Send level in dB at and below which a sound gets no FX slot.
-	constexpr float kSendOff = -100.0f; 
+	constexpr float kSendOff = -100.0f;
 
-	// Properties for global reverb handling.
-	struct ReverbSettings {
-		// Toggles all reverb processing.
-		bool enabled = true;
+	// Properties for the level of whole sources, dry and reverb alike, and their distance attenuation.
+	struct SourceSettings {
+		// Levels in dB, [-100, +10]. 0 = unchanged.
+		float radioLevel = 0.0f;  // Radios placed in the world
+		float ambienceLevel = 0.0f;  // Region sounds and sounds in `sound\fx\amb\`
 
-		// Final output of all reverb (in dB).
-		// Internally corresponds to the output volume of FX slot 0.
-		float wetLevel = 0.0f;
-
-		// Volume boost added to the room level of each preset (in dB). (Max: +10.0f)
-		float roomBoost = 0.0f;
-
-		// Volume boost on the direct level of radios placed in the world (in dB). (Max: +10.0f)
-		float radioBoost = 0.0f;
-
-		std::uint32_t interiorFallback = 26;  // ANAM for an interior without an acoustic space (MediumRoom)
-		std::uint32_t exteriorFallback = 18;  // ANAM for an exterior without an acoustic space (City)
+		// Factor on the min and max attenuation distance of each 3D sound. 2.0 = sounds carry twice as far.
+		float attenuationFactor = 1.0f;
 	};
 
-	// Properties for reverb level modifiers for sound categories (in dB).
-	struct SendSettings {
+	// A set of reverb send levels for sound categories, in dB.
+	struct SendLevels {
 		float voice3D = 0.0f;
 		float voice2D = -3.0f;
 		float weapons = 0.0f;
@@ -42,9 +33,21 @@ namespace sea::config {
 		float default2D = 0.0f;
 	};
 
-	// Properties for filtering voices (cloth masks, gas masks, power armor helmets, intercoms).
-	struct VoiceFilterSettings {
+	// Properties for reverb: listener environment, wet level and send levels.
+	struct SpatializationSettings {
+		// Toggles all reverb processing.
 		bool enabled = true;
+
+		// Final output of all reverb (in dB). Output volume of FX slots 0 and 2.
+		float wetLevel = 0.0f;
+
+		// Key that toggles the reverb bypass. Virtual-key code (VK_END), 0 = no key
+		int bypassKey = 0x23;
+
+		std::uint32_t interiorFallback = 26;  // ANAM for an interior without an acoustic space (MediumRoom)
+		std::uint32_t exteriorFallback = 18;  // ANAM for an exterior without an acoustic space (City)
+
+		SendLevels sends;
 	};
 
 	// Properties for sound occlusion values.
@@ -69,10 +72,34 @@ namespace sea::config {
 		int bypassKey = 0;  // Virtual-key code that turns occlusion off and on, 0 = no key
 	};
 
-	// Properties for the engine's distance attenuation of 3D sounds.
-	struct DistanceSettings {
-		// Factor on the min and max attenuation distance of each 3D sound. 2.0 = sounds carry twice as far.
-		float attenuationFactor = 1.0f;
+	// Properties for loud sounds: removing baked-in reverb from gunshots and the exterior gunfire tail.
+	struct ImpactSettings {
+		bool deverb = false;
+
+		float keepFraction = 0.5f;  // Of the sound length, (0, 1]
+		float fadeThreshold = 3.0f;  // dB below the peak. Fade starts once the level stays below it.
+		float maxFadeDelay = 0.25f;  // Seconds after the peak
+		float decayRate = 120.0f;  // dB per second
+		float repeatRejectLevel = 6.0f;  // dB below the peak. A later peak at this level counts as another shot.
+
+		// Second reverb (FX slot 2) for gunfire in exteriors, derived from the listener environment preset.
+		bool exteriorTail = false;
+		float tailDecayFactor = 2.0f;
+		float tailReflectionsDelay = 0.1f;  // Seconds, added
+		float tailDiffusionFactor = 0.5f;
+		float tailHFRatioFactor = 0.7f;
+		float tailLateLevel = 12.0f;  // dB, added to the late reverb level
+
+		// Send into the tail by distance between listener and gunfire. 2D gunfire uses the near level.
+		float tailNearSend = -9.0f;  // dB
+		float tailFarSend = 0.0f;  // dB
+		float tailNearDistance = 1024.0f;  // Game units
+		float tailFarDistance = 8192.0f;  // Game units
+	};
+
+	// Properties for filtering voices (cloth masks, gas masks, power armor helmets, intercoms).
+	struct VocalSettings {
+		bool enabled = true;
 	};
 
 	// Properties for engine behavior fixes.
@@ -81,14 +108,11 @@ namespace sea::config {
 		bool openCloseSounds = true;
 	};
 
-	// Properties for hotkeys used in debugging.
-	struct HotkeySettings {
-		// Virtual-key code (VK_END), 0 = no key
-		int bypassKey = 0x23;
-	};
-
 	// Properties for debugging.
 	struct DebugSettings {
+		// Key that reloads the INI. Virtual-key code (VK_INSERT), 0 = no key
+		int reloadKey = 0x2D;
+
 		// ANAM to force use in all locations (0 = off).
 		std::uint32_t forceEnvironment = 0;
 
@@ -116,12 +140,15 @@ namespace sea::config {
 		// Face cover detection is used to determine pre-filters for voice modulation.
 		bool logVoiceCover = true;
 
+		// Logs each gunshot buffer once, deverbed or rejected, with the reason for a rejection.
+		bool logGunshots = false;
+
 		// Key used to cast rays from the camera along its view and log hits (0 to disable).
 		int rayProbeKey = 0;
 
 		// Ray layers to test when casting.
 		std::vector<std::uint8_t> rayProbeLayers{37, 1, 6};
-		
+
 		// Maximum length of rays (in game units).
 		float rayProbeRange = 4096.0f;
 
@@ -132,18 +159,18 @@ namespace sea::config {
 		bool probeSoundUpdate = false;
 
 		// Forces occlusion on all 3D sounds, to test which sounds get occlusion at all.
-		// Value is EAX occlusion in mB for all 3D sounds (0 = off). 
+		// Value is EAX occlusion in mB for all 3D sounds (0 = off).
 		int testOcclusion = 0;
 
 		// Key to toggle the test occlusion while sounds play (0 = no key).
 		int occlusionTestKey = 0;
 
 		// Logs static architecture grid alignment in interior cells.
-		// The idea is that most Gamebryo interiors are made of chunky statics that can 
+		// The idea is that most Gamebryo interiors are made of chunky statics that can
 		// make the placement of walls predictable.
 		bool probeGrid = false;
 
-		// Hooks `bhkWorld::PickObject`. Logs which threads the engine uses to cast its own rays from 
+		// Hooks `bhkWorld::PickObject`. Logs which threads the engine uses to cast its own rays from
 		// to run the "what am I looking at" check. Summary every 30 seconds.
 		bool probePickThreads = false;
 
@@ -151,18 +178,20 @@ namespace sea::config {
 		bool logOcclusion = false;
 	};
 
+	// All settings, one member for each INI section in file order.
 	struct Settings {
-		ReverbSettings reverb;
-		SendSettings sends;
-		VoiceFilterSettings voiceFilters;
+		SourceSettings sources;
+		SpatializationSettings spatialization;
 		OcclusionSettings occlusion;
-		DistanceSettings distance;
+		ImpactSettings impacts;
+		VocalSettings vocals;
 		FixSettings fixes;
-		HotkeySettings hotkeys;
 		DebugSettings debug;
 	};
 
 	void Load(const std::string& iniPath);
+
+	void Reload();
 
 	const Settings& Get();
 

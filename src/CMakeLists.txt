@@ -13,6 +13,7 @@ add_library(SaintsAcoustics SHARED
 
 	source/audio/directsound.cpp
 	source/audio/eax_property.cpp
+	source/audio/pcm_buffer.cpp
 
 	source/config/settings.cpp
 
@@ -28,7 +29,9 @@ add_library(SaintsAcoustics SHARED
 	source/debug/sound_probe.cpp
 	source/debug/update_probe.cpp
 
+	source/effects/deverb.cpp
 	source/effects/distance.cpp
+	source/effects/gunshot_filter.cpp
 	source/effects/mask_filter.cpp
 	source/effects/voice_cover.cpp
 	source/effects/voice_filter.cpp
@@ -40,6 +43,7 @@ add_library(SaintsAcoustics SHARED
 	source/engine/havok.cpp
 	source/engine/objects.cpp
 	source/engine/scene.cpp
+	source/engine/sound_paths.cpp
 	source/engine/sound_flags.cpp
 	source/engine/ui.cpp
 
@@ -55,6 +59,7 @@ add_library(SaintsAcoustics SHARED
 	source/occlusion/probe.cpp
 	source/occlusion/registry.cpp
 
+	source/reverb/gunfire_tail.cpp
 	source/reverb/listener.cpp
 	source/reverb/reverb.cpp
 	source/reverb/routing.cpp
