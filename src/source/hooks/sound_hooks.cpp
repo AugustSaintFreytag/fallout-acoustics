@@ -11,6 +11,7 @@
 #include "effects/gunshot_filter.h"
 #include "effects/voice_filter.h"
 #include "engine/addresses.h"
+#include "fixes/load_holotape_sounds.h"
 #include "occlusion/apply.h"
 #include "reverb/reverb.h"
 #include "utils/log.h"
@@ -52,6 +53,8 @@ namespace sea::hooks {
 			// Filter before the original `Play` so playback starts with filtered data.
 			effects::ProcessVoiceFilter(sound);
 			effects::ProcessGunshotFilter(sound, loop);
+
+			fixes::MuteLoadHolotapeSound(sound);
 
 			const bool result = g_originalPlay(sound, loop);
 

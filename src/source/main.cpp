@@ -7,6 +7,7 @@
 #include "debug/grid_probe.h"
 #include "debug/pick_census.h"
 #include "debug/sound_probe.h"
+#include "fixes/load_holotape_sounds.h"
 #include "fixes/open_close_sounds.h"
 #include "hooks/havok_hooks.h"
 #include "hooks/request_hooks.h"
@@ -40,9 +41,14 @@ namespace {
 			sea::input::PollHotkeys();
 			break;
 
+		case NVSEMessagingInterface::kMessage_PreLoadGame:
+			sea::fixes::OnPreLoadGame();
+			break;
+
 		case NVSEMessagingInterface::kMessage_PostLoadGame:
 			SEA_LOG("Game loaded.");
 			sea::debug::ResetPlayerAcoustics();
+			sea::fixes::OnPostLoadGame();
 			break;
 
 		case NVSEMessagingInterface::kMessage_ExitToMainMenu:

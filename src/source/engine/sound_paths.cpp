@@ -16,6 +16,10 @@ namespace sea::engine {
 		constexpr std::string_view kLoopMarker = "loop";
 		constexpr std::string_view kLoopSuffix = "_lp";
 
+		constexpr std::string_view kPipBoyFolder = "fx\\ui\\pipboy\\";
+		constexpr std::string_view kHolotapeStartStem = "ui_pipboy_holotape_start";
+		constexpr std::string_view kHolotapeStopStem = "ui_pipboy_holotape_stop";
+
 		// Copies the given path in lower case with backslashes into the supplied buffer.
 		// Returns the length of the copy. Longer paths are cut at the buffer size.
 		std::size_t NormalizePath(const char* path, char* buffer) {
@@ -103,6 +107,21 @@ namespace sea::engine {
 		const std::string_view normalized(buffer, NormalizePath(path, buffer));
 
 		return normalized.find(kAmbienceFolder) != std::string_view::npos;
+	}
+
+	// Checks if the given sound file path is the Pip-Boy holotape start or stop sound (`UIPipBoyHolotapeStart`,
+	// `UIPipBoyHolotapeStop`). Any file extension matches.
+	bool IsHolotapeStartStopPath(const char* path) {
+		char buffer[kMaxPathLength];
+		const std::string_view normalized(buffer, NormalizePath(path, buffer));
+
+		if (normalized.find(kPipBoyFolder) == std::string_view::npos) {
+			return false;
+		}
+
+		const std::string_view stem = FileStem(normalized);
+
+		return stem == kHolotapeStartStem || stem == kHolotapeStopStem;
 	}
 
 }
