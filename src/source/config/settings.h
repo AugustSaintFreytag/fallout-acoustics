@@ -30,7 +30,7 @@ namespace sea::config {
 		float loops2D = kSendOff;
 		float region = kSendOff;
 		float radio3D = 0.0f;
-		float radio2D = kSendOff;  // Pip-Boy radio
+		float radio2D = kSendOff;  // Pip-Boy radio and holotapes
 		float default3D = 0.0f;
 		float default2D = 0.0f;
 	};
@@ -99,9 +99,12 @@ namespace sea::config {
 		float tailFarDistance = 8192.0f;  // Game units
 	};
 
-	// Properties for filtering voices (cloth masks, gas masks, power armor helmets, intercoms).
+	// Properties for filtering voices (cloth masks, gas masks, power armor helmets, intercoms) and holotapes.
 	struct VocalSettings {
 		bool enabled = true;
+
+		// Filters holotape lines played by the Pip-Boy like playback from an old tape.
+		bool holotapeFilter = true;
 	};
 
 	// Properties for engine behavior fixes.
@@ -111,6 +114,9 @@ namespace sea::config {
 
 		// Mutes the Pip-Boy holotape start and stop sounds while a save loads and in the first second after.
 		bool loadHolotapeSounds = true;
+
+		// Seconds added to the total time the Pip-Boy shows for a holotape. [-10, +30]
+		float holotapeDurationOffset = 0.0f;
 	};
 
 	// Properties for debugging.
