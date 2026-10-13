@@ -22,6 +22,9 @@ namespace sea::mem {
 
 	bool PatchCall(std::uintptr_t callAddress, std::uintptr_t expectedTarget, void* replacement);
 
+	bool PatchBytes(std::uintptr_t address, const std::uint8_t* expectedBytes, const std::uint8_t* replacement,
+		std::size_t length);
+
 	void* DetourFunction(std::uintptr_t address, const std::uint8_t* expectedBytes, std::size_t length, void* hook);
 
 	struct ModuleRange {
