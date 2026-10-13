@@ -59,6 +59,10 @@ namespace sea::engine {
 	constexpr std::uintptr_t kVoiceModulationCall = 0x8A2831;
 	constexpr std::uintptr_t kVoiceModulationCheck = 0x880910;
 
+	// `jne` (75 23) that skips kVoiceModulationCall for the player. [ebp-0x229] holds vtable +0x360,
+	// `IsPlayerRef`. The same value forces the player's voice to 2D. (EXE)
+	constexpr std::uintptr_t kVoiceModulationPlayerSkip = 0x8A2829;
+
 	// TESForm (Form)
 	constexpr std::uintptr_t kForm_TypeID = 0x04;  // UInt8
 	constexpr std::uintptr_t kForm_RefID = 0x0C;

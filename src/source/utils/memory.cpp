@@ -117,6 +117,31 @@ namespace sea::mem {
 		return true;
 	}
 
+	// Overwrites code at the given address with the replacement bytes.
+	// Returns false if the bytes there differ from the expected bytes, for example when another plugin patched them.
+	//
+	// Thread: Main (load time only)
+	bool PatchBytes(std::uintptr_t address, const std::uint8_t* expectedBytes, const std::uint8_t* replacement,
+		std::size_t length) {
+		auto* code = reinterpret_cast<std::uint8_t*>(address);
+
+		if (std::memcmp(code, expectedBytes, length) != 0) {
+			return false;
+		}
+
+		DWORD oldProtection = 0;
+
+		if (!VirtualProtect(code, length, PAGE_EXECUTE_READWRITE, &oldProtection)) {
+			return false;
+		}
+
+		std::memcpy(code, replacement, length);
+		VirtualProtect(code, length, oldProtection, &oldProtection);
+		FlushInstructionCache(GetCurrentProcess(), code, length);
+
+		return true;
+	}
+
 	// Replaces the first `length` bytes of a function with a jump to `hook`.
 	// Returns a trampoline that runs the replaced bytes and continues the function.
 	// Returns `nullptr` if the bytes differ from `expectedBytes`, for example when another plugin patched them.
