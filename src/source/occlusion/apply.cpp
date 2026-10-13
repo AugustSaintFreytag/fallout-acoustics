@@ -5,6 +5,7 @@
 #include "audio/eax_property.h"
 #include "config/settings.h"
 #include "engine/addresses.h"
+#include "engine/sound_flags.h"
 #include "occlusion/occlusion.h"
 #include "occlusion/registry.h"
 #include "utils/memory.h"
@@ -25,10 +26,19 @@ namespace sea::occlusion {
 
 		constexpr std::size_t kMaxTrackedSounds = 1024;
 
+		// Engine apparently plays voices from 200 units above actor feet which clips into ceilings in interiors.
+		// Define alternative voice height from actor feet level to play from instead.
+		constexpr float kVoiceHeight = 110;
+
 		// A set is made when the value moved at least this far and the last set is at least this old.
 		// A set is also made when the value reached its target. This limits EAX commits during a ramp.
 		constexpr LONG kMinStepMb = 50;
+
 		constexpr double kMinSetIntervalMs = 8.0;
+
+		// The engine plays voices this far above the speaker's feet, well above the head.
+		// Reference at `0xADECF3` (audio manager follow update) and `0x8A2933` (`Actor::VoiceSoundFunction`).
+		constexpr float kEngineVoiceHeight = 200.0f;  // Game units
 
 		struct SoundState {
 			float currentMb = 0.0f;
@@ -105,11 +115,24 @@ namespace sea::occlusion {
 			return true;
 		}
 
+		// Returns the position at which occlusion is probed for the given sound.
+		// Voices are probed at voice height above the speaker's feet instead of the engine's emitter height.
+		Vector3 ProbePosition(void* sound) {
+			Vector3 position = Field<Vector3>(sound, engine::kWin32Sound_EmitterPosition);
+			const std::uint32_t typeFlags = Field<std::uint32_t>(sound, engine::kSound_TypeFlags);
+
+			if (typeFlags & engine::kSound_Voice) {
+				position.z += kVoiceHeight - kEngineVoiceHeight;
+			}
+
+			return position;
+		}
+
 		// Publishes a sound, moves its occlusion one step toward the target and sets it on the buffer if needed.
 		// On play the value is always set. A reused buffer may still hold an old value.
 		void Step(void* sound, bool isPlay) {
 			const std::uint32_t soundId = Field<std::uint32_t>(sound, engine::kSound_ID);
-			const Vector3 position = Field<Vector3>(sound, engine::kWin32Sound_EmitterPosition);
+			const Vector3 position = ProbePosition(sound);
 			const char* path = &Field<char>(sound, engine::kSound_FilePath);
 
 			PublishSound(soundId, position, path);

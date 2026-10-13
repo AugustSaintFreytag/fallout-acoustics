@@ -280,8 +280,8 @@ namespace sea::config {
 			SEA_LOG("Config occlusion: Enabled=%d Wall=%.1fdB Max=%.1fdB LFRatio=%.2f RoomRatio=%.2f MaxDistance=%.0f "
 					"RayBudget=%d Refresh=%.2fs Attack=%.2fs Release=%.2fs BypassKey=0x%X",
 				occlusion.enabled, occlusion.wallLevel, occlusion.maxOcclusion, occlusion.lfRatio, occlusion.roomRatio,
-				occlusion.maxDistance, occlusion.rayBudget, occlusion.refreshInterval, occlusion.attackTime,
-				occlusion.releaseTime, occlusion.bypassKey);
+				occlusion.maxDistance, occlusion.rayBudget, occlusion.refreshInterval,
+				occlusion.attackTime, occlusion.releaseTime, occlusion.bypassKey);
 
 			const ImpactSettings& impacts = settings.impacts;
 
