@@ -112,9 +112,6 @@ namespace sea::config {
 		// Mutes playback of 2D open/close sounds for doors and containers that are assumed to have animation-driven sounds.
 		bool openCloseSounds = true;
 
-		// Mutes the Pip-Boy holotape start and stop sounds while a save loads and in the first second after.
-		bool loadHolotapeSounds = true;
-
 		// Seconds added to the total time the Pip-Boy shows for a holotape. [-10, +30]
 		float holotapeDurationOffset = 0.0f;
 	};

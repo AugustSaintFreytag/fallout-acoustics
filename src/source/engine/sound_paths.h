@@ -15,8 +15,6 @@ namespace sea::engine {
 
 	bool IsExplosionPath(const char* path);
 
-	bool IsHolotapeStartStopPath(const char* path);
-
 	bool IsPlayerVocalPath(const char* path);
 
 }

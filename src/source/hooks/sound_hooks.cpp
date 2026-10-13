@@ -12,7 +12,6 @@
 #include "effects/holotape_filter.h"
 #include "effects/voice_filter.h"
 #include "engine/addresses.h"
-#include "fixes/load_holotape_sounds.h"
 #include "occlusion/apply.h"
 #include "reverb/reverb.h"
 #include "utils/log.h"
@@ -56,8 +55,6 @@ namespace sea::hooks {
 			effects::ProcessVoiceFilter(sound);
 			effects::ProcessHolotapeFilter(sound);
 			effects::ProcessGunshotFilter(sound, loop);
-
-			fixes::MuteLoadHolotapeSound(sound);
 
 			const bool result = g_originalPlay(sound, loop);
 

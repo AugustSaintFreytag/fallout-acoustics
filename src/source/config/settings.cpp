@@ -224,7 +224,6 @@ namespace sea::config {
 			FixSettings& fixes = settings.fixes;
 
 			fixes.openCloseSounds = ReadBool(iniPath, "Fixes", "bFixDoubleOpenCloseSounds", fixes.openCloseSounds);
-			fixes.loadHolotapeSounds = ReadBool(iniPath, "Fixes", "bFixLoadHolotapeSounds", fixes.loadHolotapeSounds);
 
 			const float holotapeDurationOffset = ReadFloat(iniPath, "Fixes", "fHolotapeDurationOffset", fixes.holotapeDurationOffset);
 			fixes.holotapeDurationOffset = std::clamp(holotapeDurationOffset, -10.0f, 30.0f);
@@ -297,8 +296,8 @@ namespace sea::config {
 				impacts.tailNearDistance, impacts.tailFarDistance);
 
 			SEA_LOG("Config vocals: Enabled=%d HolotapeFilter=%d", settings.vocals.enabled, settings.vocals.holotapeFilter);
-			SEA_LOG("Config fixes: OpenCloseSounds=%d LoadHolotapeSounds=%d HolotapeDurationOffset=%+.1fs",
-				settings.fixes.openCloseSounds, settings.fixes.loadHolotapeSounds, settings.fixes.holotapeDurationOffset);
+			SEA_LOG("Config fixes: OpenCloseSounds=%d HolotapeDurationOffset=%+.1fs",
+				settings.fixes.openCloseSounds, settings.fixes.holotapeDurationOffset);
 
 			const DebugSettings& debug = settings.debug;
 			const char* forceEnvironmentName = "off";

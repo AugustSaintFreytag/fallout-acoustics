@@ -17,10 +17,6 @@ namespace sea::engine {
 		constexpr std::string_view kLoopMarker = "loop";
 		constexpr std::string_view kLoopSuffix = "_lp";
 
-		constexpr std::string_view kPipBoyFolder = "fx\\ui\\pipboy\\";
-		constexpr std::string_view kHolotapeStartStem = "ui_pipboy_holotape_start";
-		constexpr std::string_view kHolotapeStopStem = "ui_pipboy_holotape_stop";
-
 		// Breathing and grunts of Enhanced Movement. Its scripts play them only on the player.
 		constexpr std::string_view kEnhancedMovementFolder = "sound\\fx\\emsprint\\";
 
@@ -120,21 +116,6 @@ namespace sea::engine {
 		const std::string_view normalized(buffer, NormalizePath(path, buffer));
 
 		return normalized.find(kExplosionFolder) != std::string_view::npos;
-	}
-
-	// Checks if the given sound file path is the Pip-Boy holotape start or stop sound (`UIPipBoyHolotapeStart`,
-	// `UIPipBoyHolotapeStop`). Any file extension matches.
-	bool IsHolotapeStartStopPath(const char* path) {
-		char buffer[kMaxPathLength];
-		const std::string_view normalized(buffer, NormalizePath(path, buffer));
-
-		if (normalized.find(kPipBoyFolder) == std::string_view::npos) {
-			return false;
-		}
-
-		const std::string_view stem = FileStem(normalized);
-
-		return stem == kHolotapeStartStem || stem == kHolotapeStopStem;
 	}
 
 	// Checks if the given sound file path is a player vocal that is not a voice line, like sprint breathing or a
