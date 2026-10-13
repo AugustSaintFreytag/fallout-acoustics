@@ -9,6 +9,7 @@
 #include "engine/addresses.h"
 #include "engine/holotapes.h"
 #include "engine/sound_flags.h"
+#include "engine/sound_paths.h"
 #include "reverb/reverb.h"
 #include "utils/hash.h"
 #include "utils/log.h"
@@ -116,7 +117,14 @@ namespace sea::effects {
 			return;
 		}
 
-		const VoiceCover cover = VoiceCoverFromFlags(soundFlags);
+		const char* path = &Field<char>(gameSound, engine::kSound_FilePath);
+		VoiceCover cover = VoiceCoverFromFlags(soundFlags);
+
+		// Player vocals outside of voice lines carry no cover flag.
+		if (cover == VoiceCover::None && engine::IsPlayerVocalPath(path)) {
+			cover = PlayerCover();
+		}
+
 		const MaskFilterPreset* preset = PresetFor(cover);
 
 		if (!preset) {
@@ -154,8 +162,7 @@ namespace sea::effects {
 		const double durationSeconds = static_cast<double>(frameCount) / format.nSamplesPerSec;
 
 		SEA_LOG("[Voice] Filtered %p as %s: %lu Hz, %u ch, %.2f s, Gain %+.1f dB, Path=\"%.200s\"", gameSound,
-			VoiceCoverName(cover), format.nSamplesPerSec, format.nChannels, durationSeconds, gainDb,
-			&Field<char>(gameSound, engine::kSound_FilePath));
+			VoiceCoverName(cover), format.nSamplesPerSec, format.nChannels, durationSeconds, gainDb, path);
 	}
 
 }

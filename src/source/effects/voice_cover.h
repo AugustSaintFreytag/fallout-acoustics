@@ -17,6 +17,10 @@ namespace sea::effects {
 
 	VoiceCover ClassifySpeaker(void* actor);
 
+	void UpdatePlayerCover();
+
+	VoiceCover PlayerCover();
+
 	std::uint32_t VoiceCoverFlags(VoiceCover cover);
 
 	VoiceCover VoiceCoverFromFlags(std::uint32_t soundFlags);

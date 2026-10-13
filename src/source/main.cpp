@@ -7,6 +7,7 @@
 #include "debug/grid_probe.h"
 #include "debug/pick_census.h"
 #include "debug/sound_probe.h"
+#include "effects/voice_cover.h"
 #include "engine/holotapes.h"
 #include "fixes/holotape_duration.h"
 #include "fixes/load_holotape_sounds.h"
@@ -40,6 +41,7 @@ namespace {
 			sea::debug::PollPickCensus();
 			sea::reverb::UpdateListenerEnvironment();
 			sea::engine::UpdateHolotapeSounds();
+			sea::effects::UpdatePlayerCover();
 			sea::fixes::UpdateHolotapeDuration();
 			sea::occlusion::UpdateOcclusion();
 			sea::input::PollHotkeys();

@@ -1,14 +1,21 @@
 #include "effects/voice_cover.h"
 
+#include "config/settings.h"
 #include "engine/addresses.h"
 #include "engine/equipment.h"
 #include "engine/sound_flags.h"
+#include "utils/memory.h"
 
+#include <atomic>
 #include <iterator>
 
 namespace sea::effects {
 
 	namespace {
+
+		// Thread: Main (Write)
+		// Thread: Audio (Read)
+		std::atomic<VoiceCover> g_playerCover = VoiceCover::None;
 
 		// Returns the cover of one worn item, by its biped slots.
 		VoiceCover ClassifyArmor(const engine::ArmorMap& armor) {
@@ -67,6 +74,25 @@ namespace sea::effects {
 		}
 
 		return cover;
+	}
+
+	// Classifies the player's worn armor for player sounds that do not pass through `Actor::VoiceSoundFunction`.
+	// Does nothing if `[Vocals] bEnabled=0`.
+	//
+	// Thread: Main (each frame)
+	void UpdatePlayerCover() {
+		if (!config::Get().vocals.enabled) {
+			return;
+		}
+
+		g_playerCover = ClassifySpeaker(mem::Global<void*>(engine::kPlayerSingleton));
+	}
+
+	// Returns the player's cover from the last main loop frame.
+	//
+	// Thread: Any
+	VoiceCover PlayerCover() {
+		return g_playerCover;
 	}
 
 	// Returns the sound flags that tag a voice with its cover. Speaker uses the engine's own `Modulated` flag.
