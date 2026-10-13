@@ -57,7 +57,7 @@ namespace sea::hooks {
 
 		if (!mem::PatchCall(engine::kVoiceModulationCall, engine::kVoiceModulationCheck,
 				reinterpret_cast<void*>(&Hook_VoiceModulationCheck))) {
-			SEA_LOG("Error: Voice modulation check at %08X is not the expected call. Another plugin may patch it.",
+			SEA_LOG("Error: Voice modulation check at %08X is not the expected call. Another loaded plugin may have patched the same location.",
 				static_cast<unsigned>(engine::kVoiceModulationCall));
 
 			return false;

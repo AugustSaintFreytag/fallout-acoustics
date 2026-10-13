@@ -115,13 +115,13 @@ namespace sea::fixes {
 		// Points a `call BSSoundHandle::Play` at given hook and logs the result.
 		bool PatchPlayCall(std::uintptr_t callAddress, void* hook, const char* name) {
 			if (!mem::PatchCall(callAddress, engine::kSoundHandle_Play, hook)) {
-				SEA_LOG("Error: %s sound call at %08X is not the expected call. Another plugin may patch it.", name,
+				SEA_LOG("Error: Sound call for '%s' at %08X is not the expected call. Another loaded plugin may have patched the same location.", name,
 					static_cast<unsigned>(callAddress));
 
 				return false;
 			}
 
-			SEA_LOG("Hooks: %s sound call %08X -> %p", name, static_cast<unsigned>(callAddress), hook);
+			SEA_LOG("Hooks: Sound call for '%s' as %08X -> %p", name, static_cast<unsigned>(callAddress), hook);
 
 			return true;
 		}

@@ -109,8 +109,8 @@ namespace sea::hooks {
 				moduleName = mem::ModuleNameAt(jumpTarget, modulePath, sizeof(modulePath));
 			}
 
-			SEA_LOG("Error: %s at %08X has unexpected code %02X %02X %02X %02X %02X %02X %02X "
-					"(jump target %08X in %s). Another plugin may patch it.",
+			SEA_LOG("Error: Point '%s' at %08X has unexpected code %02X %02X %02X %02X %02X %02X %02X "
+					"(jump target %08X in %s). Another loaded plugin may have patched the same location.",
 				name, static_cast<unsigned>(address), code[0], code[1], code[2], code[3], code[4], code[5], code[6],
 				static_cast<unsigned>(jumpTarget), moduleName);
 		}
