@@ -17,4 +17,6 @@ namespace sea::engine {
 
 	bool IsHolotapeStartStopPath(const char* path);
 
+	bool IsPlayerVocalPath(const char* path);
+
 }

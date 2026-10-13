@@ -21,6 +21,9 @@ namespace sea::engine {
 		constexpr std::string_view kHolotapeStartStem = "ui_pipboy_holotape_start";
 		constexpr std::string_view kHolotapeStopStem = "ui_pipboy_holotape_stop";
 
+		// Breathing and grunts of Enhanced Movement. Its scripts play them only on the player.
+		constexpr std::string_view kEnhancedMovementFolder = "sound\\fx\\emsprint\\";
+
 		// Copies the given path in lower case with backslashes into the supplied buffer.
 		// Returns the length of the copy. Longer paths are cut at the buffer size.
 		std::size_t NormalizePath(const char* path, char* buffer) {
@@ -132,6 +135,15 @@ namespace sea::engine {
 		const std::string_view stem = FileStem(normalized);
 
 		return stem == kHolotapeStartStem || stem == kHolotapeStopStem;
+	}
+
+	// Checks if the given sound file path is a player vocal that is not a voice line, like sprint breathing or a
+	// landing grunt.
+	bool IsPlayerVocalPath(const char* path) {
+		char buffer[kMaxPathLength];
+		const std::string_view normalized(buffer, NormalizePath(path, buffer));
+
+		return normalized.find(kEnhancedMovementFolder) != std::string_view::npos;
 	}
 
 }
