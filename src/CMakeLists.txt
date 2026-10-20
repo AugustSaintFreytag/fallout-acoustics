@@ -59,6 +59,7 @@ add_library(SaintsAcoustics SHARED
 	source/input/hotkeys.cpp
 
 	source/occlusion/apply.cpp
+	source/occlusion/description.cpp
 	source/occlusion/occlusion.cpp
 	source/occlusion/probe.cpp
 	source/occlusion/registry.cpp
