@@ -13,7 +13,7 @@ namespace sea::occlusion {
 		int layers = 0;  // Physical layers between listener and sound (terrain counts once)
 		float weight = 0.0f;  // Sum of layer weights, 1 for a wall
 		int casts = 0;
-		char description[256] = "";  // Editor IDs and distances of the first layers, for the log
+		char description[384] = "";  // Editor IDs, collision layers and distances of the first layers, for the log
 	};
 
 	ProbeResult ProbeOcclusion(const Vector3& listener, const Vector3& source);

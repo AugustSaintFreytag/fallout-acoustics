@@ -42,6 +42,7 @@ namespace sea::occlusion {
 			float nearDistance = 0.0f;  // Game units from listener
 			float farDistance = 0.0f;  // Game units from listener
 			float weight = 1.0f;
+			std::uint8_t collisionLayer = 0;  // Of the first hit, for the log
 		};
 
 		// A physical layer between listener and sound, made of spans that overlap or nearly touch.
@@ -52,6 +53,7 @@ namespace sea::occlusion {
 			float farDistance = 0.0f;  // Game units from listener
 			float weight = 0.0f;
 			std::vector<void*> references;
+			std::vector<std::uint8_t> collisionLayers;  // Per reference
 		};
 
 		// Checks if a layer never occludes: actors, trees, small physics objects and small transparent objects.
@@ -121,7 +123,7 @@ namespace sea::occlusion {
 		}
 
 		// Widens the span of the given reference to include a hit at the given distance. Adds a span if there is none.
-		void AddToSpans(std::vector<Span>& spans, void* reference, float distance) {
+		void AddToSpans(std::vector<Span>& spans, void* reference, float distance, std::uint8_t collisionLayer) {
 			for (Span& span : spans) {
 				if (span.reference == reference) {
 					span.nearDistance = std::min(span.nearDistance, distance);
@@ -131,7 +133,7 @@ namespace sea::occlusion {
 				}
 			}
 
-			spans.push_back({reference, distance, distance, GetOccluderWeight(reference)});
+			spans.push_back({reference, distance, distance, GetOccluderWeight(reference), collisionLayer});
 		}
 
 		// Merges spans into layers. Spans that overlap or lie within `kLayerMergeGap` of each other share a layer.
@@ -144,13 +146,14 @@ namespace sea::occlusion {
 
 			for (const Span& span : spans) {
 				if (layers.empty() || span.nearDistance > layers.back().farDistance + kLayerMergeGap) {
-					layers.push_back({span.nearDistance, span.farDistance, 0.0f, {}});
+					layers.push_back({span.nearDistance, span.farDistance, 0.0f, {}, {}});
 				}
 
 				Layer& layer = layers.back();
 				layer.farDistance = std::max(layer.farDistance, span.farDistance);
 				layer.weight = std::max(layer.weight, span.weight);
 				layer.references.push_back(span.reference);
+				layer.collisionLayers.push_back(span.collisionLayer);
 			}
 
 			return layers;
@@ -193,6 +196,11 @@ namespace sea::occlusion {
 				}
 
 				AppendReferenceName(result, layer.references[index]);
+
+				char collisionLayerText[32];
+				std::snprintf(collisionLayerText, sizeof(collisionLayerText), "[%s]",
+					engine::CollisionLayerName(layer.collisionLayers[index]));
+				AppendDescription(result, collisionLayerText);
 			}
 
 			char distanceText[32];
@@ -246,7 +254,7 @@ namespace sea::occlusion {
 				continue;
 			}
 
-			AddToSpans(spans, hit.reference, Distance(listener, hit.point));
+			AddToSpans(spans, hit.reference, Distance(listener, hit.point), hit.layer);
 		}
 
 		const std::vector<Layer> layers = MergeSpans(spans);
