@@ -27,6 +27,9 @@ namespace sea::occlusion {
 		// Back-to-back kit walls were seen 48 units apart along the ray.
 		constexpr float kLayerMergeGap = 64.0f;  // Game units
 
+		// References with a smaller horizontal size never occlude: clutter, poles, small props.
+		constexpr float kMinOccluderSize = 35.0f;  // Game units, about half a meter
+
 		// Share of `fWallLevel` for a layer made of doors only.
 		constexpr float kDoorWeight = 0.5f;
 
@@ -56,26 +59,35 @@ namespace sea::occlusion {
 			std::vector<std::uint8_t> collisionLayers;  // Per reference
 		};
 
-		// Checks if a layer never occludes: actors, trees, small physics objects and small transparent objects.
-		bool IsIgnoredLayer(std::uint8_t layer) {
+		// Checks if a hit on the given collision layer can occlude.
+		// Layer 0 is also the result of a failed layer read and never occludes.
+		bool IsOccluderLayer(std::uint8_t layer) {
 			switch (layer) {
-			case engine::kLayer_Clutter:
-			case engine::kLayer_Weapon:
-			case engine::kLayer_Projectile:
-			case engine::kLayer_Biped:
-			case engine::kLayer_Trees:
-			case engine::kLayer_DebrisSmall:
-			case engine::kLayer_DebrisLarge:
-			case engine::kLayer_ShellCasing:
-			case engine::kLayer_TransparentSmall:
-			case engine::kLayer_TransparentSmallAnim:
-			case engine::kLayer_DeadBip:
-			case engine::kLayer_CharController:
+			case engine::kLayer_Static:
+			case engine::kLayer_AnimStatic:
+			case engine::kLayer_Transparent:
+			case engine::kLayer_Props:
+			case engine::kLayer_Terrain:
+			case engine::kLayer_Ground:
 				return true;
 
 			default:
 				return false;
 			}
+		}
+
+		// Checks if the given reference is too small to occlude.
+		// Uses the larger horizontal side of the base form's object bounds times the reference's scale.
+		// Forms without bounds are never too small.
+		bool IsTooSmallToOcclude(void* reference) {
+			const Vector3 boundsSize = engine::GetBoundsSize(engine::GetBaseForm(reference));
+			const float horizontalSize = std::max(boundsSize.x, boundsSize.y);
+
+			if (horizontalSize <= 0.0f) {
+				return false;
+			}
+
+			return horizontalSize * engine::GetScale(reference) < kMinOccluderSize;
 		}
 
 		bool IsActor(void* reference) {
@@ -213,8 +225,8 @@ namespace sea::occlusion {
 	// Counts physical layers between listener and sound. Casts from listener to sound and back past each hit.
 	// Hits of one reference form a span. Spans that overlap or nearly touch form one layer.
 	//
-	// Does not count: actors, small physics objects (clutter, debris, casings), the emitter's own reference
-	// (origin at the sound), and hits near the sound.
+	// Counts hits on static, animated static, transparent, props, terrain and ground layers only.
+	// Skips actors, references smaller than `kMinOccluderSize`, the emitter's own reference and hits near the sound.
 	//
 	// Thread: Main
 	ProbeResult ProbeOcclusion(const Vector3& listener, const Vector3& source) {
@@ -238,19 +250,29 @@ namespace sea::occlusion {
 
 		std::vector<Span> spans;
 		bool hasTerrain = false;
+		std::uint8_t terrainCollisionLayer = 0;  // Of the first terrain hit, for the log
 
 		for (const engine::RaycastResult& hit : hits) {
-			if (IsIgnoredLayer(hit.layer) || Distance(hit.point, source) <= kSourceIgnoreRadius) {
+			if (Distance(hit.point, source) <= kSourceIgnoreRadius) {
 				continue;
 			}
 
 			// Terrain counts once. A span from ridge to ridge would swallow everything between.
+			// Terrain skips the layer check until its layer is known from the log.
 			if (!hit.reference) {
+				if (!hasTerrain) {
+					terrainCollisionLayer = hit.layer;
+				}
+
 				hasTerrain = true;
 				continue;
 			}
 
-			if (IsActor(hit.reference) || Contains(emitterReferences, hit.reference)) {
+			if (!IsOccluderLayer(hit.layer)) {
+				continue;
+			}
+
+			if (IsActor(hit.reference) || Contains(emitterReferences, hit.reference) || IsTooSmallToOcclude(hit.reference)) {
 				continue;
 			}
 
@@ -274,7 +296,9 @@ namespace sea::occlusion {
 				AppendDescription(result, ", ");
 			}
 
-			AppendDescription(result, "terrain");
+			char terrainText[48];
+			std::snprintf(terrainText, sizeof(terrainText), "terrain[%s]", engine::CollisionLayerName(terrainCollisionLayer));
+			AppendDescription(result, terrainText);
 			++result.layers;
 			result.weight += 1.0f;
 		}
