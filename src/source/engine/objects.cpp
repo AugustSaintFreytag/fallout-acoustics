@@ -3,6 +3,9 @@
 #include "engine/addresses.h"
 #include "utils/memory.h"
 
+#include <cmath>
+#include <cstdint>
+
 namespace sea::engine {
 
 	using mem::Field;
@@ -162,6 +165,33 @@ namespace sea::engine {
 		}
 
 		return Field<Vector3>(reference, kRefr_Rotation);
+	}
+
+	float GetScale(void* reference) {
+		if (!reference) {
+			return 1.0f;
+		}
+
+		return Field<float>(reference, kRefr_Scale);
+	}
+
+	// Returns the size of the object bounds (OBND) of a given base form along its local axes.
+	// Size is in game units at a scale of 1. All zero if the form has no bounds set.
+	Vector3 GetBoundsSize(void* baseForm) {
+		if (!baseForm) {
+			return {};
+		}
+
+		float axisSizes[3] = {};
+
+		for (int axis = 0; axis < 3; ++axis) {
+			const std::int16_t minimum = Field<std::int16_t>(baseForm, kBoundObject_Bounds + axis * 2);
+			const std::int16_t maximum = Field<std::int16_t>(baseForm, kBoundObject_Bounds + (axis + 3) * 2);
+
+			axisSizes[axis] = std::fabs(static_cast<float>(maximum) - static_cast<float>(minimum));
+		}
+
+		return {axisSizes[0], axisSizes[1], axisSizes[2]};
 	}
 
 	// Returns the model path relative to "meshes\". 

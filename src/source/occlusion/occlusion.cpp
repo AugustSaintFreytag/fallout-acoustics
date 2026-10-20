@@ -3,6 +3,7 @@
 #include "config/settings.h"
 #include "engine/objects.h"
 #include "engine/scene.h"
+#include "occlusion/description.h"
 #include "occlusion/probe.h"
 #include "occlusion/registry.h"
 #include "utils/log.h"
@@ -52,9 +53,9 @@ namespace sea::occlusion {
 				return;
 			}
 
-			SEA_LOG("[Occlusion] ID=%u %d -> %d mB, %d layer(s) [%s], %d casts, distance %.0f, Path=\"%.120s\"",
-				sound.soundId, previousMb, targetMb, result.layers, result.description, result.casts, distance,
-				GetPath(sound.soundId).c_str());
+			SEA_LOG("[Occlusion] Sound #%u, emitter: %s, occlusion: %s, casts: %d, distance: %.0fu (path: \"%.120s\")",
+				sound.soundId, DescriptionForEmitter(result.emitter).c_str(), DescriptionForOcclusion(result).c_str(),
+				result.casts, distance, GetPath(sound.soundId).c_str());
 		}
 
 		// Removes the probe states of sounds that are gone.

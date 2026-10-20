@@ -18,6 +18,7 @@ namespace sea::engine {
 		kLayer_Trees = 9,
 		kLayer_Props = 10,
 		kLayer_Terrain = 13,
+		kLayer_Ground = 17,
 		kLayer_DebrisSmall = 19,
 		kLayer_DebrisLarge = 20,
 		kLayer_ShellCasing = 25,
