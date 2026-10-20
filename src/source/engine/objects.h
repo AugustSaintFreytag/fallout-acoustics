@@ -21,6 +21,8 @@ namespace sea::engine {
 	void* GetBaseForm(void* reference);
 	Vector3 GetPosition(void* reference);
 	Vector3 GetRotation(void* reference);
+	float GetScale(void* reference);
+	Vector3 GetBoundsSize(void* baseForm);
 
 	const char* GetModelPath(void* baseForm);
 
