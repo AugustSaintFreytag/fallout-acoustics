@@ -1,4 +1,5 @@
 .vscode
+*.code-workspace
 
 /engine
 /reference
@@ -6,4 +7,3 @@
 
 /docs
 /scripts
-/scripts_dry
