@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <vector>
 
 namespace sea::occlusion {
@@ -96,8 +97,20 @@ namespace sea::occlusion {
 			return formType == engine::kFormType_Character || formType == engine::kFormType_Creature;
 		}
 
+		// Checks if the given reference is the emitter of a sound at the given position.
+		// The engine plays object sounds at the origin of the emitter reference.
+		bool IsEmitter(void* reference, const Vector3& sound) {
+			if (!reference) {
+				return false;
+			}
+
+			return Distance(engine::GetPosition(reference), sound) <= kEmitterOriginRadius;
+		}
+
 		// Casts between two points and again from just past each hit. Adds every hit to given hits.
-		void CastThrough(const Vector3& from, const Vector3& to, std::vector<engine::RaycastResult>& hits, int& casts) {
+		// Optionally stops at the first hit on the emitter of a sound at the end point.
+		void CastThrough(const Vector3& from, const Vector3& to, std::vector<engine::RaycastResult>& hits, int& casts,
+			bool stopAtEmitter) {
 			const Vector3 step = Normalize(to - from) * kStepPastHit;
 			const float totalLength = Distance(from, to);
 			Vector3 start = from;
@@ -111,6 +124,11 @@ namespace sea::occlusion {
 				}
 
 				hits.push_back(hit);
+
+				if (stopAtEmitter && IsEmitter(hit.reference, to)) {
+					return;
+				}
+
 				start = hit.point + step;
 
 				if (Distance(from, start) >= totalLength) {
@@ -228,22 +246,28 @@ namespace sea::occlusion {
 	// Counts hits on static, animated static, transparent, props, terrain and ground layers only.
 	// Skips actors, references smaller than `kMinOccluderSize`, the emitter's own reference and hits near the sound.
 	//
+	// Line of sight ends where the ray enters the emitter. Hits past that point are inside or behind the source.
+	// Emitter origins can sit inside a wall or under the floor.
+	//
 	// Thread: Main
 	ProbeResult ProbeOcclusion(const Vector3& listener, const Vector3& source) {
 		ProbeResult result;
 		std::vector<engine::RaycastResult> hits;
 
-		CastThrough(listener, source, hits, result.casts);
-		CastThrough(source, listener, hits, result.casts);
+		CastThrough(listener, source, hits, result.casts, true);
+		CastThrough(source, listener, hits, result.casts, false);
 
 		std::vector<void*> emitterReferences;
+		float emitterDistance = std::numeric_limits<float>::max();  // Game units from listener to nearest emitter hit
 
 		for (const engine::RaycastResult& hit : hits) {
-			if (!hit.reference || Contains(emitterReferences, hit.reference)) {
+			if (!IsEmitter(hit.reference, source)) {
 				continue;
 			}
 
-			if (Distance(engine::GetPosition(hit.reference), source) <= kEmitterOriginRadius) {
+			emitterDistance = std::min(emitterDistance, Distance(listener, hit.point));
+
+			if (!Contains(emitterReferences, hit.reference)) {
 				emitterReferences.push_back(hit.reference);
 			}
 		}
@@ -253,7 +277,7 @@ namespace sea::occlusion {
 		std::uint8_t terrainCollisionLayer = 0;  // Of the first terrain hit, for the log
 
 		for (const engine::RaycastResult& hit : hits) {
-			if (Distance(hit.point, source) <= kSourceIgnoreRadius) {
+			if (Distance(hit.point, source) <= kSourceIgnoreRadius || Distance(listener, hit.point) > emitterDistance) {
 				continue;
 			}
 
