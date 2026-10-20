@@ -94,10 +94,14 @@ namespace sea::engine {
 	constexpr std::uintptr_t kModelOffset_Container = 0x48;  // CONT
 	constexpr std::uintptr_t kModel_PathData = 0x04;  // String.m_data, path relative to "meshes\" (JIP)
 
+	// TESBoundObject, base of all placeable forms
+	constexpr std::uintptr_t kBoundObject_Bounds = 0x24;  // SInt16[6], OBND min x, y, z then max x, y, z (JIP)
+
 	// TESObjectREFR (REFR)
 	constexpr std::uintptr_t kRefr_BaseForm = 0x20;  // TESForm* (JIP)
 	constexpr std::uintptr_t kRefr_Rotation = 0x24;  // NiVector3, radians (JIP)
 	constexpr std::uintptr_t kRefr_Position = 0x30;  // NiVector3 (JIP)
+	constexpr std::uintptr_t kRefr_Scale = 0x3C;  // float (JIP)
 	constexpr std::uintptr_t kRefr_ParentCell = 0x40;  // (JIP)
 	constexpr std::uintptr_t kRefr_RenderState = 0x64;  // RenderState*, null without loaded 3D (JIP)
 	constexpr std::uintptr_t kRenderState_RootNode = 0x14;  // NiNode* (JIP)
