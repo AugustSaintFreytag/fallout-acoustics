@@ -17,6 +17,10 @@ namespace sea::engine {
 	constexpr std::uintptr_t kCurrentCellAcousticSpace = 0x11DCFB8;   // BGSAcousticSpace* (JG FalloutAudio::pCurrentCellSpace)
 	constexpr std::uintptr_t kTESSingleton = 0x11DEA10;  // TES* (JIP)
 	constexpr std::uintptr_t kSceneGraphSingleton = 0x11DEB7C;  // SceneGraph* (JIP hooks.h)
+	constexpr std::uintptr_t kInterfaceManagerSingleton = 0x11D8A80;  // InterfaceManager** (JIP, xNVSE)
+
+	// InterfaceManager
+	constexpr std::uintptr_t kInterfaceManager_DebugSelection = 0xF0;  // TESObjectREFR*, console selection (xNVSE)
 
 	// Functions
 	constexpr std::uintptr_t kQueueUIMessage = 0x7052F0;  // Corner notification (JIP, xNVSE)

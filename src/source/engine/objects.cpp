@@ -24,6 +24,17 @@ namespace sea::engine {
 		return mem::Global<void*>(kPlayerSingleton);
 	}
 
+	// Returns the reference selected in the console, or null.
+	void* GetConsoleSelection() {
+		void* interfaceManager = mem::Global<void*>(kInterfaceManagerSingleton);
+
+		if (!interfaceManager) {
+			return nullptr;
+		}
+
+		return mem::Field<void*>(interfaceManager, kInterfaceManager_DebugSelection);
+	}
+
 	void* GetParentCell(void* reference) {
 		if (!reference) {
 			return nullptr;

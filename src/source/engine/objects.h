@@ -8,6 +8,7 @@
 namespace sea::engine {
 
 	void* GetPlayer();
+	void* GetConsoleSelection();
 	void* GetParentCell(void* reference);
 	void* GetCellAcousticSpace(void* cell);
 
