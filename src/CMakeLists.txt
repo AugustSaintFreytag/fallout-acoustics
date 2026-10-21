@@ -60,6 +60,7 @@ add_library(SaintsAcoustics SHARED
 
 	source/occlusion/apply.cpp
 	source/occlusion/description.cpp
+	source/occlusion/object_lists.cpp
 	source/occlusion/occlusion.cpp
 	source/occlusion/probe.cpp
 	source/occlusion/registry.cpp
@@ -90,5 +91,6 @@ if(SEA_DEPLOY_DIR)
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:SaintsAcoustics>" "${SEA_DEPLOY_DIR}/nvse/plugins/"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PDB_FILE:SaintsAcoustics>" "${SEA_DEPLOY_DIR}/nvse/plugins/"
 		COMMAND ${CMAKE_COMMAND} "-DSRC=${CMAKE_CURRENT_SOURCE_DIR}/data/SaintsAcoustics.ini" "-DDST=${SEA_DEPLOY_DIR}/nvse/plugins/SaintsAcoustics.ini" -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/deploy_ini.cmake"
+		COMMAND ${CMAKE_COMMAND} "-DSRC=${CMAKE_CURRENT_SOURCE_DIR}/data/SaintsAcousticsForms.ini" "-DDST=${SEA_DEPLOY_DIR}/nvse/plugins/SaintsAcousticsForms.ini" -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/deploy_ini.cmake"
 		COMMENT "Deploying to ${SEA_DEPLOY_DIR}")
 endif()
