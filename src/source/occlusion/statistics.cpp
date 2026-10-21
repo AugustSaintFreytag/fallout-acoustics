@@ -13,6 +13,9 @@ namespace sea::occlusion {
 		constexpr double kReportIntervalMs = 5000.0;
 		constexpr double kWarningIntervalMs = 30000.0;
 
+		// A depleted budget warns when sounds wait this many times `fRefreshInterval` between probes.
+		constexpr double kWarningRefreshFactor = 1.5;
+
 		// Sums of frame statistics over one report interval.
 		struct OcclusionStatistics {
 			std::int64_t startTime = 0;
@@ -30,18 +33,10 @@ namespace sea::occlusion {
 
 		// Logs the budget load of an interval. 100% means probing every sound in range each `fRefreshInterval`
 		// takes the whole `iRayBudget`. Above 100% sounds wait longer than `fRefreshInterval` for their next probe.
-		// Logs with `[Debug] bLogOcclusion`, and as a warning at most every 30 seconds if the budget ran out.
+		// Logs with `[Debug] bLogOcclusion`. Logs as a warning at most every 30 seconds if the budget ran out
+		// and sounds waited at least `kWarningRefreshFactor` times `fRefreshInterval` between probes.
 		void Report(const OcclusionStatistics& statistics, double seconds, std::int64_t now) {
 			const config::Settings& settings = config::Get();
-			const bool logReport = settings.debug.logOcclusion;
-			const bool depleted = statistics.depletedFrames > 0;
-			const bool warningDue = g_lastWarningTime == 0
-				|| timing::TicksToMilliseconds(static_cast<double>(now - g_lastWarningTime)) >= kWarningIntervalMs;
-
-			if (!logReport && !(depleted && warningDue)) {
-				return;
-			}
-
 			const double frames = static_cast<double>(statistics.frames);
 			const double framesPerSecond = frames / seconds;
 			const double liveSounds = static_cast<double>(statistics.liveSounds) / frames;
@@ -79,9 +74,18 @@ namespace sea::occlusion {
 
 			const double depletedShare = statistics.depletedFrames / frames * 100.0;
 
+			const bool isDelayed = statistics.depletedFrames > 0 && effectiveRefresh > refreshInterval * kWarningRefreshFactor;
+			const bool isWarningDue = g_lastWarningTime == 0
+				|| timing::TicksToMilliseconds(static_cast<double>(now - g_lastWarningTime)) >= kWarningIntervalMs;
+			const bool isWarning = isDelayed && isWarningDue;
+
+			if (!settings.debug.logOcclusion && !isWarning) {
+				return;
+			}
+
 			const char* prefix = "";
 
-			if (depleted) {
+			if (isWarning) {
 				prefix = "Warning: Ray budget depleted. ";
 				g_lastWarningTime = now;
 			}
