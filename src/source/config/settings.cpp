@@ -256,6 +256,7 @@ namespace sea::config {
 			debug.probeGrid = ReadBool(iniPath, "Debug", "bProbeGrid", debug.probeGrid);
 			debug.probePickThreads = ReadBool(iniPath, "Debug", "bProbePickThreads", debug.probePickThreads);
 			debug.logOcclusion = ReadBool(iniPath, "Debug", "bLogOcclusion", debug.logOcclusion);
+			debug.occlusionBeep = ReadBool(iniPath, "Debug", "bOcclusionBeep", debug.occlusionBeep);
 		}
 
 		void LogSettings(const Settings& settings) {
@@ -328,9 +329,10 @@ namespace sea::config {
 			}
 
 			SEA_LOG("Config occlusion probes: RayProbeKey=0x%X Layers=[%s ] Range=%.0f SoundRequests=%d SoundUpdate=%d "
-					"TestOcclusion=%d mB TestKey=0x%X Grid=%d PickThreads=%d LogOcclusion=%d",
+					"TestOcclusion=%d mB TestKey=0x%X Grid=%d PickThreads=%d LogOcclusion=%d Beep=%d",
 				debug.rayProbeKey, layerText, debug.rayProbeRange, debug.probeSoundRequests, debug.probeSoundUpdate,
-				debug.testOcclusion, debug.occlusionTestKey, debug.probeGrid, debug.probePickThreads, debug.logOcclusion);
+				debug.testOcclusion, debug.occlusionTestKey, debug.probeGrid, debug.probePickThreads, debug.logOcclusion,
+				debug.occlusionBeep);
 		}
 
 		void ReadSettings(const char* iniPath, Settings& settings) {

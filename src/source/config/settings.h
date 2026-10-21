@@ -184,6 +184,9 @@ namespace sea::config {
 
 		// Logs each change of a sound's occlusion target, with the objects the rays hit.
 		bool logOcclusion = false;
+
+		// Plays a debug tone to auralize (cool term) occlusion between object and camera.
+		bool occlusionBeep = false;
 	};
 
 	// All settings, one member for each INI section in file order.
