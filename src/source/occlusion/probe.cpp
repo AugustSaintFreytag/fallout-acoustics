@@ -1,5 +1,6 @@
 #include "occlusion/probe.h"
 
+#include "config/settings.h"
 #include "engine/addresses.h"
 #include "engine/havok.h"
 #include "engine/objects.h"
@@ -28,9 +29,6 @@ namespace sea::occlusion {
 		// Back-to-back kit walls were seen 48 units apart along the ray.
 		constexpr float kLayerMergeGap = 64.0f;  // Game units
 
-		// References with a smaller horizontal size never occlude: clutter, poles, small props.
-		constexpr float kMinOccluderSize = 35.0f;  // Game units, about half a meter
-
 		// Share of `fWallLevel` for a layer made of doors only.
 		constexpr float kDoorWeight = 0.5f;
 
@@ -53,18 +51,25 @@ namespace sea::occlusion {
 			}
 		}
 
-		// Checks if the given reference is too small to occlude.
-		// Uses the larger horizontal side of the base form's object bounds times the reference's scale.
+		bool IsDoor(void* reference) {
+			return engine::GetFormType(engine::GetBaseForm(reference)) == engine::kFormType_TESObjectDOOR;
+		}
+
+		// Checks if the given reference is smaller than `fMinOccluderSize`: furniture, clutter, poles.
+		// Doors always occlude. A closed door alone fills its frame's opening.
 		// Objects without usable bounds are not filtered here.
-		bool HasMinimumOcclusionSize(void* reference) {
-			const Vector3 boundsSize = engine::GetBoundsSize(engine::GetBaseForm(reference));
-			const float horizontalSize = std::max(boundsSize.x, boundsSize.y);
+		bool IsTooSmallToOcclude(void* reference) {
+			if (IsDoor(reference)) {
+				return false;
+			}
+
+			const float horizontalSize = OccluderSize(reference);
 
 			if (horizontalSize <= 0.0f) {
 				return false;
 			}
 
-			return horizontalSize * engine::GetScale(reference) < kMinOccluderSize;
+			return horizontalSize < config::Get().occlusion.minOccluderSize;
 		}
 
 		bool IsActor(void* reference) {
@@ -116,9 +121,7 @@ namespace sea::occlusion {
 
 		// Returns the share of `fWallLevel` that the given reference adds as an occluder.
 		float GetOccluderWeight(void* reference) {
-			const std::uint8_t formType = engine::GetFormType(engine::GetBaseForm(reference));
-
-			if (formType == engine::kFormType_TESObjectDOOR) {
+			if (IsDoor(reference)) {
 				return kDoorWeight;
 			}
 
@@ -174,11 +177,19 @@ namespace sea::occlusion {
 
 	}
 
+	// Returns the larger horizontal side of the base form's object bounds times the scale of the given reference.
+	// Returns 0 for a reference without bounds.
+	float OccluderSize(void* reference) {
+		const Vector3 boundsSize = engine::GetBoundsSize(engine::GetBaseForm(reference));
+
+		return std::max(boundsSize.x, boundsSize.y) * engine::GetScale(reference);
+	}
+
 	// Counts physical layers between listener and sound. Casts from listener to sound and back past each hit.
 	// Hits of one reference form an occluder. Occluders that overlap or nearly touch form one layer.
 	//
 	// Counts hits on static, animated static, transparent, props, terrain and ground layers only.
-	// Skips actors, references smaller than `kMinOccluderSize`, the emitter's own reference and hits near the sound.
+	// Skips actors, references smaller than `fMinOccluderSize`, the emitter's own reference and hits near the sound.
 	// Skips objects in `[OcclusionOccluderBlacklist]`. Sounds of an emitter in `[OcclusionEmitterBlacklist]` are never occluded.
 	//
 	// Line of sight ends where the ray enters the emitter. Hits past that point are inside or behind the source.
@@ -240,7 +251,7 @@ namespace sea::occlusion {
 				continue;
 			}
 
-			if (IsActor(hit.reference) || IsEmitter(hit.reference, source) || HasMinimumOcclusionSize(hit.reference)) {
+			if (IsActor(hit.reference) || IsEmitter(hit.reference, source) || IsTooSmallToOcclude(hit.reference)) {
 				continue;
 			}
 
