@@ -203,4 +203,6 @@ namespace sea::config {
 
 	const Settings& Get();
 
+	std::vector<std::string> ReadObjectList(const char* section);
+
 }

@@ -9,12 +9,15 @@
 #include <atomic>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <vector>
 
 namespace sea::config {
 
 	namespace {
+
+		constexpr const char* kObjectsFileName = "SaintsAcousticsForms.ini";
 
 		// Settings before the first `Load`.
 		const Settings g_defaultSettings;
@@ -410,6 +413,36 @@ namespace sea::config {
 	// Thread: Any
 	const Settings& Get() {
 		return *g_currentSettings.load(std::memory_order_acquire);
+	}
+
+	// Reads the editor IDs in the given section of `SaintsAcousticsForms.ini`, next to the main INI.
+	// One editor ID per line. Text after `;`, `#` or `=` is ignored.
+	//
+	// Thread: Main
+	std::vector<std::string> ReadObjectList(const char* section) {
+		const std::size_t directoryEnd = g_iniPath.find_last_of("\\/");
+		const std::string objectsPath =
+			(directoryEnd == std::string::npos ? std::string() : g_iniPath.substr(0, directoryEnd + 1)) + kObjectsFileName;
+
+		std::vector<char> buffer(32767);
+		const DWORD length = GetPrivateProfileSectionA(section, buffer.data(), static_cast<DWORD>(buffer.size()),
+			objectsPath.c_str());
+
+		std::vector<std::string> editorIDs;
+
+		for (const char* line = buffer.data(); line < buffer.data() + length && *line; line += std::strlen(line) + 1) {
+			std::string entry(line);
+			entry = entry.substr(0, entry.find_first_of(";#="));
+
+			const std::size_t first = entry.find_first_not_of(" \t");
+			const std::size_t last = entry.find_last_not_of(" \t");
+
+			if (first != std::string::npos) {
+				editorIDs.push_back(entry.substr(first, last - first + 1));
+			}
+		}
+
+		return editorIDs;
 	}
 
 }

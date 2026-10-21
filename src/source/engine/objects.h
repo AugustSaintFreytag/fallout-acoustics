@@ -12,6 +12,7 @@ namespace sea::engine {
 	void* GetCellAcousticSpace(void* cell);
 
 	const char* GetEditorID(void* form);
+	void* GetFormByEditorID(const char* editorID);
 
 	std::uint32_t GetFormID(void* form);
 	std::uint8_t GetFormType(void* form);

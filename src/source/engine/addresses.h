@@ -67,6 +67,7 @@ namespace sea::engine {
 	constexpr std::uintptr_t kForm_TypeID = 0x04;  // UInt8
 	constexpr std::uintptr_t kForm_RefID = 0x0C;
 	constexpr std::uintptr_t kFormVtbl_GetEditorID = 0x130;  // const char* (__thiscall*)() (JIP)
+	constexpr std::uintptr_t kForm_GetFormByEditorID = 0x483A00;  // TESForm* (__cdecl*)(const char*) (JIP)
 
 	constexpr std::uint8_t kFormType_TESSound = 0x0D;
 	constexpr std::uint8_t kFormType_BGSAcousticSpace = 0x0E;

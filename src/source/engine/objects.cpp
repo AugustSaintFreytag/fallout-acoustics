@@ -71,6 +71,16 @@ namespace sea::engine {
 		return editorID;
 	}
 
+	// Returns the form with a given editor ID, or null.
+	// Most forms are found only with JohnnyGuitar NVSE, which keeps their editor IDs.
+	//
+	// Thread: Main
+	void* GetFormByEditorID(const char* editorID) {
+		using GetFormByEditorIDFn = void*(__cdecl*)(const char* editorID);
+
+		return reinterpret_cast<GetFormByEditorIDFn>(kForm_GetFormByEditorID)(editorID);
+	}
+
 	std::uint32_t GetFormID(void* form) {
 		if (!form) {
 			return 0;
