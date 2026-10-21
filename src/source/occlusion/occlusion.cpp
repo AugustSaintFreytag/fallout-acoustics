@@ -97,6 +97,7 @@ namespace sea::occlusion {
 
 		const Vector3 player = engine::GetPosition(engine::GetPlayer());
 		std::vector<LiveSound> sounds = CollectSounds();
+		
 		PruneStates(sounds);
 
 		// Never probed first, then the oldest probes.
@@ -104,40 +105,44 @@ namespace sea::occlusion {
 			return g_probeStates[left.soundId].lastProbeTime < g_probeStates[right.soundId].lastProbeTime;
 		});
 
-		const std::int64_t now = timing::Now();
-		const double refreshMs = settings.refreshInterval * 1000.0;
-		int castsLeft = settings.rayBudget;
+		const std::int64_t timeNow = timing::Now();
+		const double refreshTimeInterval = settings.refreshInterval * 1000.0;
+
+		int budgetRemaining = settings.rayBudget;
 
 		for (const LiveSound& sound : sounds) {
 			ProbeState& state = g_probeStates[sound.soundId];
 
-			if (state.lastProbeTime != 0 && timing::TicksToMilliseconds(static_cast<double>(now - state.lastProbeTime)) < refreshMs) {
+			if (state.lastProbeTime != 0 && timing::TicksToMilliseconds(static_cast<double>(timeNow - state.lastProbeTime)) < refreshTimeInterval) {
 				// Sorted by probe time. All later sounds are newer.
 				break;
 			}
 
 			const float distance = Distance(listener, sound.position);
-			const bool tooClose = distance < kMinDistance || Distance(player, sound.position) < kMinDistance;
-			const bool tooFar = distance > settings.maxDistance;
+
+			const bool isTooClose = distance < kMinDistance || Distance(player, sound.position) < kMinDistance;
+			// Engine might play sounds past their max attenuation distance but can't be heard.
+			const bool isInaudible = sound.maxDistance > 0.0f && distance > sound.maxDistance;
+			const bool isTooFar = distance > settings.maxDistance || isInaudible;
 
 			ProbeResult result;
 
-			if (!tooClose && !tooFar) {
-				if (castsLeft < kMaxCastsPerProbe) {
+			if (!isTooClose && !isTooFar) {
+				if (budgetRemaining < kMaxCastsPerProbe) {
 					break;
 				}
 
 				result = ProbeOcclusion(listener, sound.position);
-				castsLeft -= result.casts;
+				budgetRemaining -= result.casts;
 			}
 
 			const std::int32_t targetMb = TargetForWeight(result.weight);
 			const std::int32_t previousMb = state.targetMb;
 
-			state.lastProbeTime = now;
+			state.lastProbeTime = timeNow;
 			state.targetMb = targetMb;
+			
 			SetTarget(sound.soundId, targetMb);
-
 			LogTarget(sound, previousMb, targetMb, result, distance);
 		}
 	}
