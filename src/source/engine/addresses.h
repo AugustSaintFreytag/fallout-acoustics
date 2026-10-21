@@ -157,6 +157,9 @@ namespace sea::engine {
 	// Scene graph
 	constexpr std::uintptr_t kSceneGraph_Camera = 0xAC;  // NiCamera* (JIP; NiNode is 0xAC bytes)
 	constexpr std::uintptr_t kNiObject_Parent = 0x18;  // NiNode* (JIP NiAVObject)
+	constexpr std::uintptr_t kNiObject_WorldBound = 0x20;  // NiBound* (JG)
+	constexpr std::uintptr_t kNiBound_Center = 0x00;  // NiPoint3, world position (JG)
+	constexpr std::uintptr_t kNiBound_Radius = 0x0C;  // float, game units (JG)
 	constexpr std::uintptr_t kNiObject_WorldRotate = 0x68;  // NiMatrix33, row major (JIP)
 	constexpr std::uintptr_t kNiObject_WorldTranslate = 0x8C;  // NiVector3 (JIP)
 	constexpr std::uintptr_t kVtbl_BSFadeNode = 0x10A8F90;  // (JIP)

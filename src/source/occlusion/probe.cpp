@@ -90,9 +90,9 @@ namespace sea::occlusion {
 		}
 
 		// Casts between two points and again from just past each hit. Adds every hit to given hits.
-		// Optionally stops at the first hit on the emitter of a sound at the end point.
-		void CastThrough(const Vector3& from, const Vector3& to, std::vector<engine::RaycastResult>& hits, int& casts,
-			bool stopAtEmitter) {
+		// Optionally stops at the first hit on the emitter of the sound at the given sound position.
+		void CastThrough(const Vector3& from, const Vector3& to, const Vector3& sound, std::vector<engine::RaycastResult>& hits,
+			int& casts, bool stopAtEmitter) {
 			const Vector3 step = Normalize(to - from) * kStepPastHit;
 			const float totalLength = Distance(from, to);
 			Vector3 start = from;
@@ -107,7 +107,7 @@ namespace sea::occlusion {
 
 				hits.push_back(hit);
 
-				if (stopAtEmitter && IsEmitter(hit.reference, to)) {
+				if (stopAtEmitter && IsEmitter(hit.reference, sound)) {
 					return;
 				}
 
@@ -178,15 +178,28 @@ namespace sea::occlusion {
 	}
 
 	// Returns the larger horizontal side of the base form's object bounds times the scale of the given reference.
-	// Returns 0 for a reference without bounds.
+	// Forms can lack object bounds (return as 0 for all axes). Fall back to diameter of world bound sphere.
 	float OccluderSize(void* reference) {
 		const Vector3 boundsSize = engine::GetBoundsSize(engine::GetBaseForm(reference));
+		const float horizontalSize = std::max(boundsSize.x, boundsSize.y);
 
-		return std::max(boundsSize.x, boundsSize.y) * engine::GetScale(reference);
+		if (horizontalSize > 0.0f) {
+			return horizontalSize * engine::GetScale(reference);
+		}
+
+		Vector3 center;
+		float radius = 0.0f;
+
+		if (!engine::GetWorldBound(reference, center, radius)) {
+			return 0.0f;
+		}
+
+		return radius * 2.0f;
 	}
 
 	// Counts physical layers between listener and sound. Casts from listener to sound and back past each hit.
-	// Hits of one reference form an occluder. Occluders that overlap or nearly touch form one layer.
+	// Casts end at the world bound center of the given emitter of the last probe if its origin is still at sound position.
+	// Multiple occluders in close proximity may be merged into single layer.
 	//
 	// Counts hits on static, animated static, transparent, props, terrain and ground layers only.
 	// Skips actors, references smaller than `fMinOccluderSize`, the emitter's own reference and hits near the sound.
@@ -196,12 +209,31 @@ namespace sea::occlusion {
 	// Emitter origins can sit inside a wall or under the floor.
 	//
 	// Thread: Main
-	ProbeResult ProbeOcclusion(const Vector3& listener, const Vector3& source) {
+	ProbeResult ProbeOcclusion(const Vector3& listener, const Vector3& source, void* knownEmitter) {
 		ProbeResult result;
+
+		if (!IsEmitter(knownEmitter, source)) {
+			knownEmitter = nullptr;
+		}
+
+		if (IsExcludedEmitter(knownEmitter)) {
+			result.emitter = knownEmitter;
+			result.emitterExcluded = true;
+			return result;
+		}
+
+		Vector3 target = source;
+		Vector3 emitterCenter;
+		float emitterRadius = 0.0f;
+
+		if (knownEmitter && engine::GetWorldBound(knownEmitter, emitterCenter, emitterRadius)) {
+			target = emitterCenter;
+		}
+
 		std::vector<engine::RaycastResult> hits;
 
-		CastThrough(listener, source, hits, result.casts, true);
-		CastThrough(source, listener, hits, result.casts, false);
+		CastThrough(listener, target, source, hits, result.casts, true);
+		CastThrough(target, listener, source, hits, result.casts, false);
 
 		float emitterDistance = std::numeric_limits<float>::max();  // Game units from listener to nearest emitter hit
 
@@ -218,6 +250,11 @@ namespace sea::occlusion {
 			}
 		}
 
+		// Rays to the center can miss the emitter's collision.
+		if (!result.emitter) {
+			result.emitter = knownEmitter;
+		}
+
 		if (IsExcludedEmitter(result.emitter)) {
 			result.emitterExcluded = true;
 			return result;
@@ -231,7 +268,7 @@ namespace sea::occlusion {
 		for (const engine::RaycastResult& hit : hits) {
 			const float distance = Distance(listener, hit.point);
 
-			if (Distance(hit.point, source) <= kSourceIgnoreRadius || distance > emitterDistance) {
+			if (Distance(hit.point, target) <= kSourceIgnoreRadius || distance > emitterDistance) {
 				continue;
 			}
 
