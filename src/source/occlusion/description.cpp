@@ -15,24 +15,27 @@ namespace sea::occlusion {
 
 	}
 
-	// Returns the editor ID of the base form of the given reference. Falls back to form type and ID.
 	std::string DescriptionForReference(void* reference) {
 		void* baseForm = engine::GetBaseForm(reference);
 		const char* editorID = engine::GetEditorID(baseForm);
 
-		// Editor IDs need JohnnyGuitar NVSE for most forms.
 		if (editorID[0] != '\0') {
 			return editorID;
 		}
 
 		char fallbackName[32];
-		std::snprintf(fallbackName, sizeof(fallbackName), "%s %08X", engine::FormTypeName(engine::GetFormType(baseForm)),
-			engine::GetFormID(baseForm));
+		
+		std::snprintf(
+			fallbackName, 
+			sizeof(fallbackName), 
+			"%s %08X", 
+			engine::FormTypeName(engine::GetFormType(baseForm)),
+			engine::GetFormID(baseForm)
+		);
 
 		return fallbackName;
 	}
 
-	// Returns the quoted name of the given emitter reference, or `unknown` if no emitter was hit.
 	std::string DescriptionForEmitter(void* reference) {
 		if (!reference) {
 			return "unknown";
@@ -41,7 +44,6 @@ namespace sea::occlusion {
 		return "\"" + DescriptionForReference(reference) + "\"";
 	}
 
-	// Returns an occluder as `Layer:"EditorID"`, or `Layer:Terrain` for terrain.
 	std::string DescriptionForOccluder(const Occluder& occluder) {
 		const std::string collisionLayer = engine::CollisionLayerName(occluder.collisionLayer);
 
@@ -49,10 +51,12 @@ namespace sea::occlusion {
 			return collisionLayer + ":Terrain";
 		}
 
-		return collisionLayer + ":\"" + DescriptionForReference(occluder.reference) + "\"";
+		char sizeText[32];
+		std::snprintf(sizeText, sizeof(sizeText), "[%.0fu]", OccluderSize(occluder.reference));
+
+		return collisionLayer + ":\"" + DescriptionForReference(occluder.reference) + "\"" + sizeText;
 	}
 
-	// Returns a layer as its occluders joined by "+" and its distance from the listener.
 	std::string DescriptionForLayer(const OcclusionLayer& layer) {
 		std::string description;
 
@@ -70,8 +74,6 @@ namespace sea::occlusion {
 		return description + distanceText;
 	}
 
-	// Returns the occlusion weight of a probe followed by its layers.
-	// Returns `excluded` for an emitter in `[OcclusionEmitterBlacklist]` and `none` if nothing occludes.
 	std::string DescriptionForOcclusion(const ProbeResult& result) {
 		if (result.emitterExcluded) {
 			return "excluded";
