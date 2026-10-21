@@ -4,6 +4,7 @@
 #include "debug/occlusion_test.h"
 #include "debug/ray_probe.h"
 #include "engine/ui.h"
+#include "occlusion/object_lists.h"
 #include "occlusion/occlusion.h"
 #include "reverb/reverb.h"
 
@@ -127,6 +128,7 @@ namespace sea::input {
 			}
 
 			config::Reload();
+			occlusion::LoadObjectLists();
 			engine::ShowNotification("Acoustics Settings: Reloaded");
 		}
 
