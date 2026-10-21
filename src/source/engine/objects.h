@@ -8,11 +8,13 @@
 namespace sea::engine {
 
 	void* GetPlayer();
+	void* GetConsoleSelection();
 	void* GetParentCell(void* reference);
 	void* GetCellAcousticSpace(void* cell);
 
 	const char* GetEditorID(void* form);
 	void* GetFormByEditorID(const char* editorID);
+	void* LookupReference(std::uint32_t formID);
 
 	std::uint32_t GetFormID(void* form);
 	std::uint8_t GetFormType(void* form);
@@ -24,6 +26,7 @@ namespace sea::engine {
 	Vector3 GetRotation(void* reference);
 	float GetScale(void* reference);
 	Vector3 GetBoundsSize(void* baseForm);
+	bool GetWorldBound(void* reference, Vector3& center, float& radius);
 
 	const char* GetModelPath(void* baseForm);
 

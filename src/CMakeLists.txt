@@ -21,6 +21,7 @@ add_library(SaintsAcoustics SHARED
 	source/debug/cover_probe.cpp
 	source/debug/eax_readback.cpp
 	source/debug/grid_probe.cpp
+	source/debug/beeper.cpp
 	source/debug/occlusion_test.cpp
 	source/debug/pick_census.cpp
 	source/debug/ray_probe.cpp
@@ -64,6 +65,7 @@ add_library(SaintsAcoustics SHARED
 	source/occlusion/occlusion.cpp
 	source/occlusion/probe.cpp
 	source/occlusion/registry.cpp
+	source/occlusion/statistics.cpp
 
 	source/reverb/impact_tail.cpp
 	source/reverb/listener.cpp
@@ -80,7 +82,7 @@ target_compile_features(SaintsAcoustics PRIVATE cxx_std_20)
 target_compile_definitions(SaintsAcoustics PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX _CRT_SECURE_NO_WARNINGS)
 target_compile_options(SaintsAcoustics PRIVATE /W4 /permissive- /utf-8 /Zi)
 target_link_options(SaintsAcoustics PRIVATE /DEBUG /INCREMENTAL:NO /OPT:REF /OPT:ICF)
-target_link_libraries(SaintsAcoustics PRIVATE dxguid psapi)
+target_link_libraries(SaintsAcoustics PRIVATE dxguid psapi winmm)
 
 # Static CRT, so users do not need the VC++ redistributable.
 set_property(TARGET SaintsAcoustics PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")

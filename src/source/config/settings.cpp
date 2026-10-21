@@ -164,6 +164,7 @@ namespace sea::config {
 			occlusion.lfRatio = ReadFloat(iniPath, "Occlusion", "fLFRatio", occlusion.lfRatio);
 			occlusion.roomRatio = ReadFloat(iniPath, "Occlusion", "fRoomRatio", occlusion.roomRatio);
 			occlusion.maxDistance = ReadFloat(iniPath, "Occlusion", "fMaxDistance", occlusion.maxDistance);
+			occlusion.minOccluderSize = ReadFloat(iniPath, "Occlusion", "fMinOccluderSize", occlusion.minOccluderSize);
 			occlusion.rayBudget = ReadInt(iniPath, "Occlusion", "iRayBudget", occlusion.rayBudget);
 			occlusion.refreshInterval = ReadFloat(iniPath, "Occlusion", "fRefreshInterval", occlusion.refreshInterval);
 			occlusion.attackTime = ReadFloat(iniPath, "Occlusion", "fAttackTime", occlusion.attackTime);
@@ -256,6 +257,7 @@ namespace sea::config {
 			debug.probeGrid = ReadBool(iniPath, "Debug", "bProbeGrid", debug.probeGrid);
 			debug.probePickThreads = ReadBool(iniPath, "Debug", "bProbePickThreads", debug.probePickThreads);
 			debug.logOcclusion = ReadBool(iniPath, "Debug", "bLogOcclusion", debug.logOcclusion);
+			debug.occlusionBeep = ReadBool(iniPath, "Debug", "bOcclusionBeep", debug.occlusionBeep);
 		}
 
 		void LogSettings(const Settings& settings) {
@@ -280,9 +282,9 @@ namespace sea::config {
 			const OcclusionSettings& occlusion = settings.occlusion;
 
 			SEA_LOG("Config occlusion: Enabled=%d Wall=%.1fdB Max=%.1fdB LFRatio=%.2f RoomRatio=%.2f MaxDistance=%.0f "
-					"RayBudget=%d Refresh=%.2fs Attack=%.2fs Release=%.2fs BypassKey=0x%X",
+					"MinOccluderSize=%.0f RayBudget=%d Refresh=%.2fs Attack=%.2fs Release=%.2fs BypassKey=0x%X",
 				occlusion.enabled, occlusion.wallLevel, occlusion.maxOcclusion, occlusion.lfRatio, occlusion.roomRatio,
-				occlusion.maxDistance, occlusion.rayBudget, occlusion.refreshInterval,
+				occlusion.maxDistance, occlusion.minOccluderSize, occlusion.rayBudget, occlusion.refreshInterval,
 				occlusion.attackTime, occlusion.releaseTime, occlusion.bypassKey);
 
 			const ImpactSettings& impacts = settings.impacts;
@@ -328,9 +330,10 @@ namespace sea::config {
 			}
 
 			SEA_LOG("Config occlusion probes: RayProbeKey=0x%X Layers=[%s ] Range=%.0f SoundRequests=%d SoundUpdate=%d "
-					"TestOcclusion=%d mB TestKey=0x%X Grid=%d PickThreads=%d LogOcclusion=%d",
+					"TestOcclusion=%d mB TestKey=0x%X Grid=%d PickThreads=%d LogOcclusion=%d Beep=%d",
 				debug.rayProbeKey, layerText, debug.rayProbeRange, debug.probeSoundRequests, debug.probeSoundUpdate,
-				debug.testOcclusion, debug.occlusionTestKey, debug.probeGrid, debug.probePickThreads, debug.logOcclusion);
+				debug.testOcclusion, debug.occlusionTestKey, debug.probeGrid, debug.probePickThreads, debug.logOcclusion,
+				debug.occlusionBeep);
 		}
 
 		void ReadSettings(const char* iniPath, Settings& settings) {

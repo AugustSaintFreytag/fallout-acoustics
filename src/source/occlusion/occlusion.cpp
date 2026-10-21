@@ -1,11 +1,13 @@
 #include "occlusion/occlusion.h"
 
 #include "config/settings.h"
+#include "debug/beeper.h"
 #include "engine/objects.h"
 #include "engine/scene.h"
 #include "occlusion/description.h"
 #include "occlusion/probe.h"
 #include "occlusion/registry.h"
+#include "occlusion/statistics.h"
 #include "utils/log.h"
 #include "utils/timing.h"
 #include "utils/vector3.h"
@@ -29,6 +31,7 @@ namespace sea::occlusion {
 		struct ProbeState {
 			std::int64_t lastProbeTime = 0;  // 0 = never probed
 			std::int32_t targetMb = 0;
+			std::uint32_t emitterFormID = 0;  // Emitter found on the last probe, 0 if none
 		};
 
 		// Thread: Main (Read, Write)
@@ -56,6 +59,18 @@ namespace sea::occlusion {
 			SEA_LOG("[Occlusion] Sound #%u, emitter: %s, occlusion: %s, casts: %d, distance: %.0fu (path: \"%.120s\")",
 				sound.soundId, DescriptionForEmitter(result.emitter).c_str(), DescriptionForOcclusion(result).c_str(),
 				result.casts, distance, GetPath(sound.soundId).c_str());
+		}
+
+		// Checks if a sound needs rays. Sounds too close to listener or player and sounds out of range get target 0.
+		bool IsInProbeRange(const LiveSound& sound, const Vector3& listener, const Vector3& player) {
+			const float distance = Distance(listener, sound.position);
+
+			const bool isTooClose = distance < kMinDistance || Distance(player, sound.position) < kMinDistance;
+			// Engine might play sounds past their max attenuation distance but can't be heard.
+			const bool isInaudible = sound.maxDistance > 0.0f && distance > sound.maxDistance;
+			const bool isTooFar = distance > config::Get().occlusion.maxDistance || isInaudible;
+
+			return !isTooClose && !isTooFar;
 		}
 
 		// Removes the probe states of sounds that are gone.
@@ -97,6 +112,7 @@ namespace sea::occlusion {
 
 		const Vector3 player = engine::GetPosition(engine::GetPlayer());
 		std::vector<LiveSound> sounds = CollectSounds();
+		
 		PruneStates(sounds);
 
 		// Never probed first, then the oldest probes.
@@ -104,42 +120,61 @@ namespace sea::occlusion {
 			return g_probeStates[left.soundId].lastProbeTime < g_probeStates[right.soundId].lastProbeTime;
 		});
 
-		const std::int64_t now = timing::Now();
-		const double refreshMs = settings.refreshInterval * 1000.0;
-		int castsLeft = settings.rayBudget;
+		const std::int64_t timeNow = timing::Now();
+		const double refreshTimeInterval = settings.refreshInterval * 1000.0;
+
+		int rayBudgetRemaining = settings.rayBudget;
+		
+		FrameStatistics frame;
+		frame.numberOfLiveSounds = static_cast<int>(sounds.size());
+
+		for (const LiveSound& sound : sounds) {
+			if (IsInProbeRange(sound, listener, player)) {
+				frame.numberOfSoundsInRange += 1;
+			}
+		}
 
 		for (const LiveSound& sound : sounds) {
 			ProbeState& state = g_probeStates[sound.soundId];
 
-			if (state.lastProbeTime != 0 && timing::TicksToMilliseconds(static_cast<double>(now - state.lastProbeTime)) < refreshMs) {
-				// Sorted by probe time. All later sounds are newer.
+			if (state.lastProbeTime != 0 && timing::TicksToMilliseconds(static_cast<double>(timeNow - state.lastProbeTime)) < refreshTimeInterval) {
+				// Sorted by probe time, later sounds are more recent.
 				break;
 			}
 
 			const float distance = Distance(listener, sound.position);
-			const bool tooClose = distance < kMinDistance || Distance(player, sound.position) < kMinDistance;
-			const bool tooFar = distance > settings.maxDistance;
-
+			
 			ProbeResult result;
 
-			if (!tooClose && !tooFar) {
-				if (castsLeft < kMaxCastsPerProbe) {
+			if (IsInProbeRange(sound, listener, player)) {
+				if (rayBudgetRemaining < kMaxCastsPerProbe) {
+					frame.isBudgetDepleted = true;
 					break;
 				}
 
-				result = ProbeOcclusion(listener, sound.position);
-				castsLeft -= result.casts;
+				void* knownEmitter = engine::LookupReference(state.emitterFormID);
+
+				result = ProbeOcclusion(listener, sound.position, knownEmitter);
+				rayBudgetRemaining -= result.casts;
+				state.emitterFormID = engine::GetFormID(result.emitter);
+
+				frame.numberOfProbes += 1;
+				frame.numberOfCasts += result.casts;
 			}
 
 			const std::int32_t targetMb = TargetForWeight(result.weight);
 			const std::int32_t previousMb = state.targetMb;
 
-			state.lastProbeTime = now;
+			state.lastProbeTime = timeNow;
 			state.targetMb = targetMb;
+			
 			SetTarget(sound.soundId, targetMb);
-
 			LogTarget(sound, previousMb, targetMb, result, distance);
+
+			debug::UpdateBeeper(sound.position, targetMb);
 		}
+
+		RecordFrame(frame);
 	}
 
 	// Toggles the occlusion bypass. Every sound ramps to 0 while bypassed.

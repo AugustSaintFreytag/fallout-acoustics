@@ -39,6 +39,8 @@ namespace sea::occlusion {
 		int casts = 0;
 	};
 
-	ProbeResult ProbeOcclusion(const Vector3& listener, const Vector3& source);
+	float OccluderSize(void* reference);
+
+	ProbeResult ProbeOcclusion(const Vector3& listener, const Vector3& source, void* knownEmitter);
 
 }

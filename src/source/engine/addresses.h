@@ -17,9 +17,14 @@ namespace sea::engine {
 	constexpr std::uintptr_t kCurrentCellAcousticSpace = 0x11DCFB8;   // BGSAcousticSpace* (JG FalloutAudio::pCurrentCellSpace)
 	constexpr std::uintptr_t kTESSingleton = 0x11DEA10;  // TES* (JIP)
 	constexpr std::uintptr_t kSceneGraphSingleton = 0x11DEB7C;  // SceneGraph* (JIP hooks.h)
+	constexpr std::uintptr_t kInterfaceManagerSingleton = 0x11D8A80;  // InterfaceManager** (JIP, xNVSE)
+
+	// InterfaceManager
+	constexpr std::uintptr_t kInterfaceManager_DebugSelection = 0xF0;  // TESObjectREFR*, console selection (xNVSE)
 
 	// Functions
 	constexpr std::uintptr_t kQueueUIMessage = 0x7052F0;  // Corner notification (JIP, xNVSE)
+	constexpr std::uintptr_t kLookupFormByID = 0x4839C0;  // TESForm* __cdecl(UInt32 formID) (ST, ShowOff)
 
 	// NiAVObject* __thiscall TES::PickObject(PickData*, bool). Nearest hit only. (JIP _GetRayCastObject; EXE: ret 8)
 	constexpr std::uintptr_t kTES_PickObject = 0x458440;
@@ -152,6 +157,9 @@ namespace sea::engine {
 	// Scene graph
 	constexpr std::uintptr_t kSceneGraph_Camera = 0xAC;  // NiCamera* (JIP; NiNode is 0xAC bytes)
 	constexpr std::uintptr_t kNiObject_Parent = 0x18;  // NiNode* (JIP NiAVObject)
+	constexpr std::uintptr_t kNiObject_WorldBound = 0x20;  // NiBound* (JG)
+	constexpr std::uintptr_t kNiBound_Center = 0x00;  // NiPoint3, world position (JG)
+	constexpr std::uintptr_t kNiBound_Radius = 0x0C;  // float, game units (JG)
 	constexpr std::uintptr_t kNiObject_WorldRotate = 0x68;  // NiMatrix33, row major (JIP)
 	constexpr std::uintptr_t kNiObject_WorldTranslate = 0x8C;  // NiVector3 (JIP)
 	constexpr std::uintptr_t kVtbl_BSFadeNode = 0x10A8F90;  // (JIP)

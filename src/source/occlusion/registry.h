@@ -11,9 +11,10 @@ namespace sea::occlusion {
 	struct LiveSound {
 		std::uint32_t soundId = 0;
 		Vector3 position;
+		float maxDistance = 0.0f;  // Game units, engine attenuation range
 	};
 
-	void PublishSound(std::uint32_t soundId, const Vector3& position, const char* path);
+	void PublishSound(std::uint32_t soundId, const Vector3& position, float maxDistance, const char* path);
 
 	bool GetTarget(std::uint32_t soundId, std::int32_t& occlusionMb);
 

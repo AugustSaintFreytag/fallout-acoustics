@@ -13,6 +13,7 @@ namespace sea::occlusion {
 
 		struct Entry {
 			Vector3 position;
+			float maxDistance = 0.0f;
 			std::int64_t lastPublished = 0;
 			std::int32_t targetMb = 0;
 			bool hasTarget = false;
@@ -29,10 +30,10 @@ namespace sea::occlusion {
 
 	}
 
-	// Adds or updates a sound with its position. Path is copied only when the sound is new.
+	// Adds or updates a sound with its position and attenuation range. Path is copied only when the sound is new.
 	//
 	// Thread: Audio
-	void PublishSound(std::uint32_t soundId, const Vector3& position, const char* path) {
+	void PublishSound(std::uint32_t soundId, const Vector3& position, float maxDistance, const char* path) {
 		const std::int64_t now = timing::Now();
 
 		std::lock_guard guard(g_lock);
@@ -44,6 +45,7 @@ namespace sea::occlusion {
 		}
 
 		entry->second.position = position;
+		entry->second.maxDistance = maxDistance;
 		entry->second.lastPublished = now;
 	}
 
@@ -83,7 +85,7 @@ namespace sea::occlusion {
 				continue;
 			}
 
-			sounds.push_back({entry->first, entry->second.position});
+			sounds.push_back({entry->first, entry->second.position, entry->second.maxDistance});
 			++entry;
 		}
 

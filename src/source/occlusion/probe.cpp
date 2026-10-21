@@ -1,5 +1,6 @@
 #include "occlusion/probe.h"
 
+#include "config/settings.h"
 #include "engine/addresses.h"
 #include "engine/havok.h"
 #include "engine/objects.h"
@@ -28,9 +29,6 @@ namespace sea::occlusion {
 		// Back-to-back kit walls were seen 48 units apart along the ray.
 		constexpr float kLayerMergeGap = 64.0f;  // Game units
 
-		// References with a smaller horizontal size never occlude: clutter, poles, small props.
-		constexpr float kMinOccluderSize = 35.0f;  // Game units, about half a meter
-
 		// Share of `fWallLevel` for a layer made of doors only.
 		constexpr float kDoorWeight = 0.5f;
 
@@ -53,18 +51,25 @@ namespace sea::occlusion {
 			}
 		}
 
-		// Checks if the given reference is too small to occlude.
-		// Uses the larger horizontal side of the base form's object bounds times the reference's scale.
+		bool IsDoor(void* reference) {
+			return engine::GetFormType(engine::GetBaseForm(reference)) == engine::kFormType_TESObjectDOOR;
+		}
+
+		// Checks if the given reference is smaller than `fMinOccluderSize`: furniture, clutter, poles.
+		// Doors always occlude. A closed door alone fills its frame's opening.
 		// Objects without usable bounds are not filtered here.
-		bool HasMinimumOcclusionSize(void* reference) {
-			const Vector3 boundsSize = engine::GetBoundsSize(engine::GetBaseForm(reference));
-			const float horizontalSize = std::max(boundsSize.x, boundsSize.y);
+		bool IsTooSmallToOcclude(void* reference) {
+			if (IsDoor(reference)) {
+				return false;
+			}
+
+			const float horizontalSize = OccluderSize(reference);
 
 			if (horizontalSize <= 0.0f) {
 				return false;
 			}
 
-			return horizontalSize * engine::GetScale(reference) < kMinOccluderSize;
+			return horizontalSize < config::Get().occlusion.minOccluderSize;
 		}
 
 		bool IsActor(void* reference) {
@@ -85,9 +90,9 @@ namespace sea::occlusion {
 		}
 
 		// Casts between two points and again from just past each hit. Adds every hit to given hits.
-		// Optionally stops at the first hit on the emitter of a sound at the end point.
-		void CastThrough(const Vector3& from, const Vector3& to, std::vector<engine::RaycastResult>& hits, int& casts,
-			bool stopAtEmitter) {
+		// Optionally stops at the first hit on the emitter of the sound at the given sound position.
+		void CastThrough(const Vector3& from, const Vector3& to, const Vector3& sound, std::vector<engine::RaycastResult>& hits,
+			int& casts, bool stopAtEmitter) {
 			const Vector3 step = Normalize(to - from) * kStepPastHit;
 			const float totalLength = Distance(from, to);
 			Vector3 start = from;
@@ -102,7 +107,7 @@ namespace sea::occlusion {
 
 				hits.push_back(hit);
 
-				if (stopAtEmitter && IsEmitter(hit.reference, to)) {
+				if (stopAtEmitter && IsEmitter(hit.reference, sound)) {
 					return;
 				}
 
@@ -116,9 +121,7 @@ namespace sea::occlusion {
 
 		// Returns the share of `fWallLevel` that the given reference adds as an occluder.
 		float GetOccluderWeight(void* reference) {
-			const std::uint8_t formType = engine::GetFormType(engine::GetBaseForm(reference));
-
-			if (formType == engine::kFormType_TESObjectDOOR) {
+			if (IsDoor(reference)) {
 				return kDoorWeight;
 			}
 
@@ -174,23 +177,63 @@ namespace sea::occlusion {
 
 	}
 
+	// Returns the larger horizontal side of the base form's object bounds times the scale of the given reference.
+	// Forms can lack object bounds (return as 0 for all axes). Fall back to diameter of world bound sphere.
+	float OccluderSize(void* reference) {
+		const Vector3 boundsSize = engine::GetBoundsSize(engine::GetBaseForm(reference));
+		const float horizontalSize = std::max(boundsSize.x, boundsSize.y);
+
+		if (horizontalSize > 0.0f) {
+			return horizontalSize * engine::GetScale(reference);
+		}
+
+		Vector3 center;
+		float radius = 0.0f;
+
+		if (!engine::GetWorldBound(reference, center, radius)) {
+			return 0.0f;
+		}
+
+		return radius * 2.0f;
+	}
+
 	// Counts physical layers between listener and sound. Casts from listener to sound and back past each hit.
-	// Hits of one reference form an occluder. Occluders that overlap or nearly touch form one layer.
+	// Casts end at the world bound center of the given emitter of the last probe if its origin is still at sound position.
+	// Multiple occluders in close proximity may be merged into single layer.
 	//
 	// Counts hits on static, animated static, transparent, props, terrain and ground layers only.
-	// Skips actors, references smaller than `kMinOccluderSize`, the emitter's own reference and hits near the sound.
+	// Skips actors, references smaller than `fMinOccluderSize`, the emitter's own reference and hits near the sound.
 	// Skips objects in `[OcclusionOccluderBlacklist]`. Sounds of an emitter in `[OcclusionEmitterBlacklist]` are never occluded.
 	//
 	// Line of sight ends where the ray enters the emitter. Hits past that point are inside or behind the source.
 	// Emitter origins can sit inside a wall or under the floor.
 	//
 	// Thread: Main
-	ProbeResult ProbeOcclusion(const Vector3& listener, const Vector3& source) {
+	ProbeResult ProbeOcclusion(const Vector3& listener, const Vector3& source, void* knownEmitter) {
 		ProbeResult result;
+
+		if (!IsEmitter(knownEmitter, source)) {
+			knownEmitter = nullptr;
+		}
+
+		if (IsExcludedEmitter(knownEmitter)) {
+			result.emitter = knownEmitter;
+			result.emitterExcluded = true;
+			return result;
+		}
+
+		Vector3 target = source;
+		Vector3 emitterCenter;
+		float emitterRadius = 0.0f;
+
+		if (knownEmitter && engine::GetWorldBound(knownEmitter, emitterCenter, emitterRadius)) {
+			target = emitterCenter;
+		}
+
 		std::vector<engine::RaycastResult> hits;
 
-		CastThrough(listener, source, hits, result.casts, true);
-		CastThrough(source, listener, hits, result.casts, false);
+		CastThrough(listener, target, source, hits, result.casts, true);
+		CastThrough(target, listener, source, hits, result.casts, false);
 
 		float emitterDistance = std::numeric_limits<float>::max();  // Game units from listener to nearest emitter hit
 
@@ -207,6 +250,11 @@ namespace sea::occlusion {
 			}
 		}
 
+		// Rays to the center can miss the emitter's collision.
+		if (!result.emitter) {
+			result.emitter = knownEmitter;
+		}
+
 		if (IsExcludedEmitter(result.emitter)) {
 			result.emitterExcluded = true;
 			return result;
@@ -220,7 +268,7 @@ namespace sea::occlusion {
 		for (const engine::RaycastResult& hit : hits) {
 			const float distance = Distance(listener, hit.point);
 
-			if (Distance(hit.point, source) <= kSourceIgnoreRadius || distance > emitterDistance) {
+			if (Distance(hit.point, target) <= kSourceIgnoreRadius || distance > emitterDistance) {
 				continue;
 			}
 
@@ -240,7 +288,7 @@ namespace sea::occlusion {
 				continue;
 			}
 
-			if (IsActor(hit.reference) || IsEmitter(hit.reference, source) || HasMinimumOcclusionSize(hit.reference)) {
+			if (IsActor(hit.reference) || IsEmitter(hit.reference, source) || IsTooSmallToOcclude(hit.reference)) {
 				continue;
 			}
 
