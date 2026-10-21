@@ -92,6 +92,23 @@ namespace sea::engine {
 		return reinterpret_cast<GetFormByEditorIDFn>(kForm_GetFormByEditorID)(editorID);
 	}
 
+	// Returns the reference with the given form ID. Returns null if there is none or the form is no reference.
+	void* LookupReference(std::uint32_t formID) {
+		if (formID == 0) {
+			return nullptr;
+		}
+
+		using LookupFormByIDFn = void*(__cdecl*)(std::uint32_t formID);
+		void* form = reinterpret_cast<LookupFormByIDFn>(kLookupFormByID)(formID);
+		const std::uint8_t formType = GetFormType(form);
+
+		if (formType != kFormType_TESObjectREFR && formType != kFormType_Character && formType != kFormType_Creature) {
+			return nullptr;
+		}
+
+		return form;
+	}
+
 	std::uint32_t GetFormID(void* form) {
 		if (!form) {
 			return 0;
@@ -213,6 +230,36 @@ namespace sea::engine {
 		}
 
 		return {axisSizes[0], axisSizes[1], axisSizes[2]};
+	}
+
+	// Writes the world bound sphere of a reference's loaded 3D to the given center and radius.
+	bool GetWorldBound(void* reference, Vector3& center, float& radius) {
+		if (!reference) {
+			return false;
+		}
+
+		void* renderState = Field<void*>(reference, kRefr_RenderState);
+
+		if (!renderState) {
+			return false;
+		}
+
+		void* rootNode = Field<void*>(renderState, kRenderState_RootNode);
+
+		if (!rootNode) {
+			return false;
+		}
+
+		void* bound = Field<void*>(rootNode, kNiObject_WorldBound);
+
+		if (!bound) {
+			return false;
+		}
+
+		center = Field<Vector3>(bound, kNiBound_Center);
+		radius = Field<float>(bound, kNiBound_Radius);
+
+		return radius > 0.0f;
 	}
 
 	// Returns the model path relative to "meshes\". 

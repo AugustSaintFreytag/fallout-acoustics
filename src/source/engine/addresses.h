@@ -24,6 +24,7 @@ namespace sea::engine {
 
 	// Functions
 	constexpr std::uintptr_t kQueueUIMessage = 0x7052F0;  // Corner notification (JIP, xNVSE)
+	constexpr std::uintptr_t kLookupFormByID = 0x4839C0;  // TESForm* __cdecl(UInt32 formID) (ST, ShowOff)
 
 	// NiAVObject* __thiscall TES::PickObject(PickData*, bool). Nearest hit only. (JIP _GetRayCastObject; EXE: ret 8)
 	constexpr std::uintptr_t kTES_PickObject = 0x458440;
