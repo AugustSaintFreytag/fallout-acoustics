@@ -16,6 +16,7 @@
 #include "hooks/sound_hooks.h"
 #include "hooks/voice_hooks.h"
 #include "input/hotkeys.h"
+#include "occlusion/object_lists.h"
 #include "occlusion/occlusion.h"
 #include "reverb/listener.h"
 #include "utils/log.h"
@@ -44,6 +45,10 @@ namespace {
 			sea::fixes::UpdateHolotapeDuration();
 			sea::occlusion::UpdateOcclusion();
 			sea::input::PollHotkeys();
+			break;
+
+		case NVSEMessagingInterface::kMessage_DeferredInit:
+			sea::occlusion::LoadObjectLists();
 			break;
 
 		case NVSEMessagingInterface::kMessage_PostLoadGame:

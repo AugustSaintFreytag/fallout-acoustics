@@ -70,8 +70,13 @@ namespace sea::occlusion {
 		return description + distanceText;
 	}
 
-	// Returns the occlusion weight of a probe followed by its layers, or `none` if nothing occludes.
+	// Returns the occlusion weight of a probe followed by its layers.
+	// Returns `excluded` for an emitter in `[OcclusionEmitterBlacklist]` and `none` if nothing occludes.
 	std::string DescriptionForOcclusion(const ProbeResult& result) {
+		if (result.emitterExcluded) {
+			return "excluded";
+		}
+
 		if (result.weight <= 0.0f) {
 			return "none";
 		}

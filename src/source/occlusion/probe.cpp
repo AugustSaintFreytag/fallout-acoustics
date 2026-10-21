@@ -3,6 +3,7 @@
 #include "engine/addresses.h"
 #include "engine/havok.h"
 #include "engine/objects.h"
+#include "occlusion/object_lists.h"
 
 #include <algorithm>
 #include <limits>
@@ -13,10 +14,11 @@ namespace sea::occlusion {
 	namespace {
 
 		constexpr int kMaxHitsPerDirection = kMaxCastsPerProbe / 2 - 1;
+
 		constexpr float kStepPastHit = 1.0f;  // Game units
 
 		// Hits this close to the sound are the surface the source is mounted on or the floor under it.
-		// A wall on the far side of the source is usually further away than this.
+		// A wall on the far side of the source should be further away than this.
 		constexpr float kSourceIgnoreRadius = 12.0f;  // Game units
 
 		// References with their origin this close to the sound are the emitter (`PlaySound3D`, placed emitters).
@@ -39,23 +41,22 @@ namespace sea::occlusion {
 		// Layer 0 is also the result of a failed layer read and never occludes.
 		bool IsOccluderLayer(std::uint8_t layer) {
 			switch (layer) {
-			case engine::kLayer_Static:
-			case engine::kLayer_AnimStatic:
-			case engine::kLayer_Transparent:
-			case engine::kLayer_Props:
-			case engine::kLayer_Terrain:
-			case engine::kLayer_Ground:
-				return true;
-
-			default:
-				return false;
+				case engine::kLayer_Static:
+				case engine::kLayer_AnimStatic:
+				case engine::kLayer_Transparent:
+				case engine::kLayer_Props:
+				case engine::kLayer_Terrain:
+				case engine::kLayer_Ground:
+					return true;
+				default:
+					return false;
 			}
 		}
 
 		// Checks if the given reference is too small to occlude.
 		// Uses the larger horizontal side of the base form's object bounds times the reference's scale.
-		// Forms without bounds are never too small.
-		bool IsTooSmallToOcclude(void* reference) {
+		// Objects without usable bounds are not filtered here.
+		bool HasMinimumOcclusionSize(void* reference) {
 			const Vector3 boundsSize = engine::GetBoundsSize(engine::GetBaseForm(reference));
 			const float horizontalSize = std::max(boundsSize.x, boundsSize.y);
 
@@ -68,8 +69,9 @@ namespace sea::occlusion {
 
 		bool IsActor(void* reference) {
 			const std::uint8_t formType = engine::GetFormType(reference);
+			bool isActor = formType == engine::kFormType_Character || formType == engine::kFormType_Creature;
 
-			return formType == engine::kFormType_Character || formType == engine::kFormType_Creature;
+			return isActor;
 		}
 
 		// Checks if the given reference is the emitter of a sound at the given position.
@@ -152,6 +154,7 @@ namespace sea::occlusion {
 				}
 
 				OcclusionLayer& layer = layers.back();
+
 				layer.farDistance = std::max(layer.farDistance, occluder.farDistance);
 				layer.weight = std::max(layer.weight, occluder.weight);
 				layer.occluders.push_back(occluder);
@@ -176,6 +179,7 @@ namespace sea::occlusion {
 	//
 	// Counts hits on static, animated static, transparent, props, terrain and ground layers only.
 	// Skips actors, references smaller than `kMinOccluderSize`, the emitter's own reference and hits near the sound.
+	// Skips objects in `[OcclusionOccluderBlacklist]`. Sounds of an emitter in `[OcclusionEmitterBlacklist]` are never occluded.
 	//
 	// Line of sight ends where the ray enters the emitter. Hits past that point are inside or behind the source.
 	// Emitter origins can sit inside a wall or under the floor.
@@ -203,6 +207,11 @@ namespace sea::occlusion {
 			}
 		}
 
+		if (IsExcludedEmitter(result.emitter)) {
+			result.emitterExcluded = true;
+			return result;
+		}
+
 		std::vector<Occluder> occluders;
 		bool hasTerrain = false;
 		Occluder terrain;
@@ -215,8 +224,7 @@ namespace sea::occlusion {
 				continue;
 			}
 
-			// Terrain counts once. A span from ridge to ridge would swallow everything between.
-			// Terrain skips the layer check until its layer is known from the log.
+			// Terrain handling
 			if (!hit.reference) {
 				if (distance < terrain.nearDistance) {
 					terrain.nearDistance = distance;
@@ -232,7 +240,11 @@ namespace sea::occlusion {
 				continue;
 			}
 
-			if (IsActor(hit.reference) || IsEmitter(hit.reference, source) || IsTooSmallToOcclude(hit.reference)) {
+			if (IsActor(hit.reference) || IsEmitter(hit.reference, source) || HasMinimumOcclusionSize(hit.reference)) {
+				continue;
+			}
+
+			if (IsBlacklistedOccluder(hit.reference)) {
 				continue;
 			}
 
