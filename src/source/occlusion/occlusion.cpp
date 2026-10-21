@@ -31,6 +31,7 @@ namespace sea::occlusion {
 		struct ProbeState {
 			std::int64_t lastProbeTime = 0;  // 0 = never probed
 			std::int32_t targetMb = 0;
+			std::uint32_t emitterFormID = 0;  // Emitter found on the last probe, 0 if none
 		};
 
 		// Thread: Main (Read, Write)
@@ -142,6 +143,7 @@ namespace sea::occlusion {
 			}
 
 			const float distance = Distance(listener, sound.position);
+			
 			ProbeResult result;
 
 			if (IsInProbeRange(sound, listener, player)) {
@@ -150,8 +152,11 @@ namespace sea::occlusion {
 					break;
 				}
 
-				result = ProbeOcclusion(listener, sound.position);
+				void* knownEmitter = engine::LookupReference(state.emitterFormID);
+
+				result = ProbeOcclusion(listener, sound.position, knownEmitter);
 				rayBudgetRemaining -= result.casts;
+				state.emitterFormID = engine::GetFormID(result.emitter);
 
 				frame.numberOfProbes += 1;
 				frame.numberOfCasts += result.casts;
