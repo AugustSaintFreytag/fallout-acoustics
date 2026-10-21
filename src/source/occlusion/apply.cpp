@@ -134,8 +134,9 @@ namespace sea::occlusion {
 			const std::uint32_t soundId = Field<std::uint32_t>(sound, engine::kSound_ID);
 			const Vector3 position = ProbePosition(sound);
 			const char* path = &Field<char>(sound, engine::kSound_FilePath);
+			const float maxDistance = Field<float>(sound, engine::kSound_MaxAttenuationDistance);
 
-			PublishSound(soundId, position, path);
+			PublishSound(soundId, position, maxDistance, path);
 
 			// States of ended sounds stay in the table. Clear it when full.
 			if (g_states.size() >= kMaxTrackedSounds) {
