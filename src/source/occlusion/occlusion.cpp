@@ -1,6 +1,7 @@
 #include "occlusion/occlusion.h"
 
 #include "config/settings.h"
+#include "debug/beeper.h"
 #include "engine/objects.h"
 #include "engine/scene.h"
 #include "occlusion/description.h"
@@ -144,6 +145,8 @@ namespace sea::occlusion {
 			
 			SetTarget(sound.soundId, targetMb);
 			LogTarget(sound, previousMb, targetMb, result, distance);
+
+			debug::UpdateBeeper(sound.position, targetMb);
 		}
 	}
 

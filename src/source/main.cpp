@@ -3,6 +3,7 @@
 #include "nvse/nvse_minimal.h"
 
 #include "config/settings.h"
+#include "debug/beeper.h"
 #include "debug/cell_probe.h"
 #include "debug/grid_probe.h"
 #include "debug/pick_census.h"
@@ -39,6 +40,7 @@ namespace {
 			sea::debug::PollAndLogPlayerAcoustics();
 			sea::debug::PollGridProbe();
 			sea::debug::PollPickCensus();
+			sea::debug::PollBeeper();
 			sea::reverb::UpdateListenerEnvironment();
 			sea::engine::UpdateHolotapeSounds();
 			sea::effects::UpdatePlayerCover();
