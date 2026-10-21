@@ -164,6 +164,7 @@ namespace sea::config {
 			occlusion.lfRatio = ReadFloat(iniPath, "Occlusion", "fLFRatio", occlusion.lfRatio);
 			occlusion.roomRatio = ReadFloat(iniPath, "Occlusion", "fRoomRatio", occlusion.roomRatio);
 			occlusion.maxDistance = ReadFloat(iniPath, "Occlusion", "fMaxDistance", occlusion.maxDistance);
+			occlusion.minOccluderSize = ReadFloat(iniPath, "Occlusion", "fMinOccluderSize", occlusion.minOccluderSize);
 			occlusion.rayBudget = ReadInt(iniPath, "Occlusion", "iRayBudget", occlusion.rayBudget);
 			occlusion.refreshInterval = ReadFloat(iniPath, "Occlusion", "fRefreshInterval", occlusion.refreshInterval);
 			occlusion.attackTime = ReadFloat(iniPath, "Occlusion", "fAttackTime", occlusion.attackTime);
@@ -281,9 +282,9 @@ namespace sea::config {
 			const OcclusionSettings& occlusion = settings.occlusion;
 
 			SEA_LOG("Config occlusion: Enabled=%d Wall=%.1fdB Max=%.1fdB LFRatio=%.2f RoomRatio=%.2f MaxDistance=%.0f "
-					"RayBudget=%d Refresh=%.2fs Attack=%.2fs Release=%.2fs BypassKey=0x%X",
+					"MinOccluderSize=%.0f RayBudget=%d Refresh=%.2fs Attack=%.2fs Release=%.2fs BypassKey=0x%X",
 				occlusion.enabled, occlusion.wallLevel, occlusion.maxOcclusion, occlusion.lfRatio, occlusion.roomRatio,
-				occlusion.maxDistance, occlusion.rayBudget, occlusion.refreshInterval,
+				occlusion.maxDistance, occlusion.minOccluderSize, occlusion.rayBudget, occlusion.refreshInterval,
 				occlusion.attackTime, occlusion.releaseTime, occlusion.bypassKey);
 
 			const ImpactSettings& impacts = settings.impacts;

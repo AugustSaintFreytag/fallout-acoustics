@@ -64,10 +64,11 @@ namespace sea::config {
 		float roomRatio = 1.0f;
 
 		float maxDistance = 4096.0f;  // Game units. Sounds further away are not probed.
+		float minOccluderSize = 128.0f;  // Game units. Smaller references never occlude, except doors.
 		int rayBudget = 64;  // Casts per frame
 		float refreshInterval = 0.1f;  // Seconds between probes of the same sound
 
-		// Seconds for a change over the full range (0 to fMaxOcclusion). Attack = more occlusion, release = less.
+		// Seconds for any change to reach 95% of its target. Attack = more occlusion, release = less.
 		float attackTime = 0.06f;
 		float releaseTime = 0.25f;
 
