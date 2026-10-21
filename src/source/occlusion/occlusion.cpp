@@ -7,6 +7,7 @@
 #include "occlusion/description.h"
 #include "occlusion/probe.h"
 #include "occlusion/registry.h"
+#include "occlusion/statistics.h"
 #include "utils/log.h"
 #include "utils/timing.h"
 #include "utils/vector3.h"
@@ -59,6 +60,18 @@ namespace sea::occlusion {
 				result.casts, distance, GetPath(sound.soundId).c_str());
 		}
 
+		// Checks if a sound needs rays. Sounds too close to listener or player and sounds out of range get target 0.
+		bool IsInProbeRange(const LiveSound& sound, const Vector3& listener, const Vector3& player) {
+			const float distance = Distance(listener, sound.position);
+
+			const bool isTooClose = distance < kMinDistance || Distance(player, sound.position) < kMinDistance;
+			// Engine might play sounds past their max attenuation distance but can't be heard.
+			const bool isInaudible = sound.maxDistance > 0.0f && distance > sound.maxDistance;
+			const bool isTooFar = distance > config::Get().occlusion.maxDistance || isInaudible;
+
+			return !isTooClose && !isTooFar;
+		}
+
 		// Removes the probe states of sounds that are gone.
 		void PruneStates(const std::vector<LiveSound>& sounds) {
 			std::unordered_set<std::uint32_t> liveIds;
@@ -109,32 +122,39 @@ namespace sea::occlusion {
 		const std::int64_t timeNow = timing::Now();
 		const double refreshTimeInterval = settings.refreshInterval * 1000.0;
 
-		int budgetRemaining = settings.rayBudget;
+		int rayBudgetRemaining = settings.rayBudget;
+		
+		FrameStatistics frame;
+		frame.numberOfLiveSounds = static_cast<int>(sounds.size());
+
+		for (const LiveSound& sound : sounds) {
+			if (IsInProbeRange(sound, listener, player)) {
+				frame.numberOfSoundsInRange += 1;
+			}
+		}
 
 		for (const LiveSound& sound : sounds) {
 			ProbeState& state = g_probeStates[sound.soundId];
 
 			if (state.lastProbeTime != 0 && timing::TicksToMilliseconds(static_cast<double>(timeNow - state.lastProbeTime)) < refreshTimeInterval) {
-				// Sorted by probe time. All later sounds are newer.
+				// Sorted by probe time, later sounds are more recent.
 				break;
 			}
 
 			const float distance = Distance(listener, sound.position);
-
-			const bool isTooClose = distance < kMinDistance || Distance(player, sound.position) < kMinDistance;
-			// Engine might play sounds past their max attenuation distance but can't be heard.
-			const bool isInaudible = sound.maxDistance > 0.0f && distance > sound.maxDistance;
-			const bool isTooFar = distance > settings.maxDistance || isInaudible;
-
 			ProbeResult result;
 
-			if (!isTooClose && !isTooFar) {
-				if (budgetRemaining < kMaxCastsPerProbe) {
+			if (IsInProbeRange(sound, listener, player)) {
+				if (rayBudgetRemaining < kMaxCastsPerProbe) {
+					frame.isBudgetDepleted = true;
 					break;
 				}
 
 				result = ProbeOcclusion(listener, sound.position);
-				budgetRemaining -= result.casts;
+				rayBudgetRemaining -= result.casts;
+
+				frame.numberOfProbes += 1;
+				frame.numberOfCasts += result.casts;
 			}
 
 			const std::int32_t targetMb = TargetForWeight(result.weight);
@@ -148,6 +168,8 @@ namespace sea::occlusion {
 
 			debug::UpdateBeeper(sound.position, targetMb);
 		}
+
+		RecordFrame(frame);
 	}
 
 	// Toggles the occlusion bypass. Every sound ramps to 0 while bypassed.

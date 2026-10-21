@@ -65,6 +65,7 @@ add_library(SaintsAcoustics SHARED
 	source/occlusion/occlusion.cpp
 	source/occlusion/probe.cpp
 	source/occlusion/registry.cpp
+	source/occlusion/statistics.cpp
 
 	source/reverb/impact_tail.cpp
 	source/reverb/listener.cpp
