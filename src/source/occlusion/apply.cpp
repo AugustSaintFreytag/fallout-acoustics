@@ -12,7 +12,6 @@
 #include "utils/threads.h"
 #include "utils/timing.h"
 
-#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -80,10 +79,10 @@ namespace sea::occlusion {
 			return applied;
 		}
 
-		// Returns the ramp rate in mB per second for the attack (more occlusion) or the release (less occlusion).
-		float RampRate(bool attack) {
+		// Returns the share of the remaining distance to the target to cover in the given elapsed seconds.
+		// Attack is more occlusion, release is less. Every change reaches 95% within the configured time.
+		float SmoothingFactor(bool attack, float elapsedSeconds) {
 			const config::OcclusionSettings& settings = config::Get().occlusion;
-			const float rangeMb = settings.maxOcclusion * 100.0f;
 			float seconds = settings.releaseTime;
 
 			if (attack) {
@@ -91,10 +90,13 @@ namespace sea::occlusion {
 			}
 
 			if (seconds <= 0.0f) {
-				return rangeMb * 1000.0f;
+				return 1.0f;
 			}
 
-			return rangeMb / seconds;
+			// Three time constants leave e^-3 (about 5%) of the distance.
+			const float timeConstant = seconds / 3.0f;
+
+			return 1.0f - std::exp(-elapsedSeconds / timeConstant);
 		}
 
 		// Reads the target of a sound. Target is 0 while bypassed and the last known target otherwise.
@@ -156,10 +158,9 @@ namespace sea::occlusion {
 			} else if (knownTarget && state.lastStepTime != 0) {
 				const float seconds = static_cast<float>(timing::TicksToMilliseconds(static_cast<double>(now - state.lastStepTime)) / 1000.0);
 				const bool attack = targetMb < state.currentMb;
-				const float maxStep = RampRate(attack) * seconds;
 				const float difference = static_cast<float>(targetMb) - state.currentMb;
 
-				state.currentMb += std::clamp(difference, -maxStep, maxStep);
+				state.currentMb += difference * SmoothingFactor(attack, seconds);
 			}
 
 			state.lastStepTime = now;
