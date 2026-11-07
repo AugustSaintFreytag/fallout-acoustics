@@ -8,6 +8,7 @@
 #include "occlusion/probe.h"
 #include "occlusion/registry.h"
 #include "occlusion/statistics.h"
+#include "reverb/listener.h"
 #include "utils/log.h"
 #include "utils/timing.h"
 #include "utils/vector3.h"
@@ -16,6 +17,7 @@
 #include <atomic>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -61,16 +63,37 @@ namespace sea::occlusion {
 				result.casts, distance, GetPath(sound.soundId).c_str());
 		}
 
-		// Checks if a sound needs rays. Sounds too close to listener or player and sounds out of range get target 0.
+		// Checks if a sound is past its max attenuation distance.
+		// Engine might play sounds past their max attenuation distance but can't be heard.
+		bool IsInaudible(const LiveSound& sound, float distance) {
+			return sound.maxDistance > 0.0f && distance > sound.maxDistance;
+		}
+
+		// Checks if a sound needs rays. Sounds too close to listener or player and sounds out of range get no rays.
 		bool IsInProbeRange(const LiveSound& sound, const Vector3& listener, const Vector3& player) {
 			const float distance = Distance(listener, sound.position);
 
 			const bool isTooClose = distance < kMinDistance || Distance(player, sound.position) < kMinDistance;
-			// Engine might play sounds past their max attenuation distance but can't be heard.
-			const bool isInaudible = sound.maxDistance > 0.0f && distance > sound.maxDistance;
-			const bool isTooFar = distance > config::Get().occlusion.maxDistance || isInaudible;
+			const bool isTooFar = distance > config::Get().occlusion.maxDistance || IsInaudible(sound, distance);
 
 			return !isTooClose && !isTooFar;
+		}
+
+		// Checks if an audible sound is further from the listener than `fMaxDistance`.
+		bool IsBeyondProbeDistance(const LiveSound& sound, const Vector3& listener) {
+			const float distance = Distance(listener, sound.position);
+
+			return distance > config::Get().occlusion.maxDistance && !IsInaudible(sound, distance);
+		}
+
+		// Returns the layer weight for sounds beyond `fMaxDistance`.
+		// In interiors these sounds get `fMaxOcclusion`. In exteriors they get one wall layer.
+		float WeightBeyondProbeDistance() {
+			if (reverb::IsListenerInExterior()) {
+				return 1.0f;
+			}
+
+			return std::numeric_limits<float>::max();
 		}
 
 		// Removes the probe states of sounds that are gone.
@@ -160,6 +183,8 @@ namespace sea::occlusion {
 
 				frame.numberOfProbes += 1;
 				frame.numberOfCasts += result.casts;
+			} else if (IsBeyondProbeDistance(sound, listener)) {
+				result.weight = WeightBeyondProbeDistance();
 			}
 
 			const std::int32_t targetMb = TargetForWeight(result.weight);
