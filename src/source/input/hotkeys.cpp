@@ -28,9 +28,17 @@ namespace sea::input {
 			return foregroundProcessId == GetCurrentProcessId();
 		}
 
-		// Checks if the key was pressed on this frame. 
-		bool WasPressed(int key, bool& keyWasPressedInPriorFrame) {
-			const bool keyIsPressed = (GetAsyncKeyState(key) & 0x8000) != 0 && GameHasFocus();
+		// Converts a DirectInput scan code (DIK_*, as listed on the GECK wiki) to a Windows virtual-key code.
+		// DIK codes above 0x7F are E0-prefixed (extended) keys like Page Up (0xC9) or Insert (0xD2).
+		int ToVirtualKey(int scanCode) {
+			const UINT code = (scanCode & 0x80) ? (0xE000 | (scanCode & 0x7F)) : static_cast<UINT>(scanCode);
+			return static_cast<int>(MapVirtualKeyW(code, MAPVK_VSC_TO_VK_EX));
+		}
+
+		// Checks if the key (DirectInput scan code) was pressed on this frame.
+		bool WasPressed(int scanCode, bool& keyWasPressedInPriorFrame) {
+			const int key = ToVirtualKey(scanCode);
+			const bool keyIsPressed = key != 0 && (GetAsyncKeyState(key) & 0x8000) != 0 && GameHasFocus();
 			const bool keyIsPressedInThisFrame = keyIsPressed && !keyWasPressedInPriorFrame;
 
 			keyWasPressedInPriorFrame = keyIsPressed;

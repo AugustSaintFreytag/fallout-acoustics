@@ -43,8 +43,8 @@ namespace sea::config {
 		// Final output of all reverb (in dB). Output volume of FX slots 0 and 2.
 		float wetLevel = 0.0f;
 
-		// Key that toggles the reverb bypass. Virtual-key code (VK_END), 0 = no key
-		int bypassKey = 0x23;
+		// Key that toggles the reverb bypass. DirectInput scan code (DIK_END), 0 = no key
+		int bypassKey = 0xCF;
 
 		std::uint32_t interiorFallback = 26;  // ANAM for an interior without an acoustic space (MediumRoom)
 		std::uint32_t exteriorFallback = 18;  // ANAM for an exterior without an acoustic space (City)
@@ -72,7 +72,7 @@ namespace sea::config {
 		float attackTime = 0.06f;
 		float releaseTime = 0.25f;
 
-		int bypassKey = 0;  // Virtual-key code that turns occlusion off and on, 0 = no key
+		int bypassKey = 0;  // DirectInput scan code that turns occlusion off and on, 0 = no key
 	};
 
 	// Properties for loud sounds: removing baked-in reverb from gunshots and the exterior tail for gunfire and explosions.
@@ -119,8 +119,8 @@ namespace sea::config {
 
 	// Properties for debugging.
 	struct DebugSettings {
-		// Key that reloads the INI. Virtual-key code (VK_INSERT), 0 = no key
-		int reloadKey = 0x2D;
+		// Key that reloads the INI. DirectInput scan code (DIK_INSERT), 0 = no key
+		int reloadKey = 0xD2;
 
 		// ANAM to force use in all locations (0 = off).
 		std::uint32_t forceEnvironment = 0;
