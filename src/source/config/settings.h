@@ -98,6 +98,13 @@ namespace sea::config {
 		float tailFarSend = 0.0f;  // dB
 		float tailNearDistance = 1024.0f;  // Game units
 		float tailFarDistance = 8192.0f;  // Game units
+
+		// Lowers the level of the player's gunfire while it keeps firing and raises it again after it stopped.
+		bool thresholdShift = false;
+		float thresholdShiftAttack = 0.5f;  // Seconds of continuous gunfire to reach full attenuation
+		float thresholdShiftSustain = 0.25f;  // Seconds after gunfire stopped until the decay starts
+		float thresholdShiftDecay = 1.0f;  // Seconds from full attenuation back to 0 dB
+		float thresholdShiftAttenuation = -4.0f;  // dB at full attenuation, [-100, 0]
 	};
 
 	// Properties for filtering voices (cloth masks, gas masks, power armor helmets, intercoms) and holotapes.

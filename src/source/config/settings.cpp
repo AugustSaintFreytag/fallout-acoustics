@@ -215,6 +215,21 @@ namespace sea::config {
 
 			const float tailFarDistance = ReadFloat(iniPath, "Impacts", "fTailFarDistance", impacts.tailFarDistance);
 			impacts.tailFarDistance = std::max(tailFarDistance, impacts.tailNearDistance + 1.0f);
+
+			impacts.thresholdShift = ReadBool(iniPath, "Impacts", "bThresholdShift", impacts.thresholdShift);
+
+			const float shiftAttack = ReadFloat(iniPath, "Impacts", "fThresholdShiftAttack", impacts.thresholdShiftAttack);
+			impacts.thresholdShiftAttack = std::max(shiftAttack, 0.0f);
+
+			const float shiftSustain = ReadFloat(iniPath, "Impacts", "fThresholdShiftSustain", impacts.thresholdShiftSustain);
+			impacts.thresholdShiftSustain = std::max(shiftSustain, 0.0f);
+
+			const float shiftDecay = ReadFloat(iniPath, "Impacts", "fThresholdShiftDecay", impacts.thresholdShiftDecay);
+			impacts.thresholdShiftDecay = std::max(shiftDecay, 0.0f);
+
+			const float shiftAttenuation = ReadFloat(iniPath, "Impacts", "fThresholdShiftAttenuation",
+				impacts.thresholdShiftAttenuation);
+			impacts.thresholdShiftAttenuation = std::clamp(shiftAttenuation, -100.0f, 0.0f);
 		}
 
 		void LoadVocals(const char* iniPath, Settings& settings) {
@@ -299,6 +314,10 @@ namespace sea::config {
 				impacts.exteriorTail, impacts.tailDecayFactor, impacts.tailReflectionsDelay, impacts.tailDiffusionFactor,
 				impacts.tailHFRatioFactor, impacts.tailLateLevel, impacts.tailNearSend, impacts.tailFarSend,
 				impacts.tailNearDistance, impacts.tailFarDistance);
+
+			SEA_LOG("Config impacts threshold shift: Enabled=%d Attack=%.2fs Sustain=%.2fs Decay=%.2fs Attenuation=%.1fdB",
+				impacts.thresholdShift, impacts.thresholdShiftAttack, impacts.thresholdShiftSustain,
+				impacts.thresholdShiftDecay, impacts.thresholdShiftAttenuation);
 
 			SEA_LOG("Config vocals: Enabled=%d HolotapeFilter=%d", settings.vocals.enabled, settings.vocals.holotapeFilter);
 			SEA_LOG("Config fixes: OpenCloseSounds=%d HolotapeDurationOffset=%+.1fs",
