@@ -14,6 +14,7 @@
 #include "engine/addresses.h"
 #include "occlusion/apply.h"
 #include "reverb/reverb.h"
+#include "reverb/threshold_shift.h"
 #include "utils/log.h"
 #include "utils/memory.h"
 #include "utils/threads.h"
@@ -32,17 +33,17 @@ namespace sea::hooks {
 		using UpdateFn = bool(__thiscall*)(void* sound, DWORD timeDelta);
 		using SetEnvironmentTypeFn = void(__thiscall*)(void* sound, std::uint32_t type);
 
+		// State
+
 		PlayFn g_originalPlay = nullptr;
 		UpdateFn g_originalUpdate = nullptr;
 		SetEnvironmentTypeFn g_originalSetEnvironmentType = nullptr;
 
-		// Routes a sound into the reverb, sets its occlusion, filters a covered voice or a holotape and deverbs a gunshot.
-		// Then plays it.
+		// Hooks engine sound playback call.
 		bool __fastcall Hook_Play(void* sound, void* /*edx*/, bool loop) {
 			threads::RememberAudioThread();
 			effects::ScaleAttenuationDistances(sound);
 
-			// Route before the original `Play` so first samples already reach the reverb.
 			const std::int64_t routeStartTime = debug::BeginRouteTiming();
 			const char* route = reverb::OnSoundPlay(sound);
 			debug::EndRouteTiming(routeStartTime);
@@ -51,7 +52,6 @@ namespace sea::hooks {
 			debug::ApplyTestOcclusionOnPlay(sound);
 			debug::OnSoundStarted(sound, route);
 
-			// Filter before the original `Play` so playback starts with filtered data.
 			effects::ProcessVoiceFilter(sound);
 			effects::ProcessHolotapeFilter(sound);
 			effects::ProcessGunshotFilter(sound, loop);
@@ -63,23 +63,28 @@ namespace sea::hooks {
 			return result;
 		}
 
-		// Ramps occlusion of a playing sound and calls the original. Runs about every 2 ms per sound.
+		// Hooks engine sound update call.
 		bool __fastcall Hook_Update(void* sound, void* /*edx*/, DWORD timeDelta) {
 			debug::OnSoundUpdate(sound);
 			occlusion::OnSoundUpdate(sound);
+			reverb::OnThresholdShiftUpdate(sound);
 			debug::ApplyTestOcclusionOnUpdate(sound);
 
 			return g_originalUpdate(sound, timeDelta);
 		}
 
-		// Checks if any setting needs the `Update` hook. Only occlusion and its debug probes use it.
+		// Checks if any setting needs the `Update` hook.
 		bool NeedsUpdateHook() {
 			const config::Settings& settings = config::Get();
 
-			return settings.occlusion.enabled || settings.debug.probeSoundUpdate || settings.debug.testOcclusion != 0;
+			return (
+				settings.occlusion.enabled || 
+				settings.impacts.thresholdShift || 
+				settings.debug.probeSoundUpdate ||
+				settings.debug.testOcclusion != 0);
 		}
 
-		// Logs the engine's own environment changes on a sound (`[Debug] bLogSoundEnvironment`).
+		// Hooks engine sound environment change.
 		void __fastcall Hook_SetEnvironmentType(void* sound, void* /*edx*/, std::uint32_t type) {
 			const std::uint32_t previous = Field<std::uint32_t>(sound, engine::kSound_EnvironmentType);
 			g_originalSetEnvironmentType(sound, type);

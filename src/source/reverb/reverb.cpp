@@ -12,13 +12,12 @@
 #include "reverb/listener.h"
 #include "reverb/presets.h"
 #include "reverb/routing.h"
+#include "reverb/threshold_shift.h"
 #include "occlusion/apply.h"
 #include "utils/log.h"
 #include "utils/memory.h"
 
-#include <algorithm>
 #include <atomic>
-#include <cmath>
 #include <optional>
 #include <unordered_set>
 
@@ -108,21 +107,21 @@ namespace sea::reverb {
 		// The sets are deferred if `[Debug] bDeferEaxSets` is on. The last set in `ApplySource` commits them.
 		void ApplySourceLevel(IKsPropertySet* propertySet, void* gameSound, std::uint32_t soundFlags) {
 			const auto buffer = static_cast<std::uintptr_t>(Field<std::uint32_t>(gameSound, engine::kWin32Sound_Buffer));
-			const float level = GetSourceLevel(soundFlags, &Field<char>(gameSound, engine::kSound_FilePath));
+			const float sourceLevel = GetSourceLevel(soundFlags, &Field<char>(gameSound, engine::kSound_FilePath));
+			const std::optional<float> shiftedLevel = OnThresholdShiftPlay(gameSound, sourceLevel);
+			const bool isShifted = shiftedLevel.has_value();
+			const float level = shiftedLevel.value_or(sourceLevel);
 
-			if (level == 0.0f && !g_leveledBuffers.contains(buffer)) {
+			if (level == 0.0f && !isShifted && !g_leveledBuffers.contains(buffer)) {
 				return;
 			}
 
-			// OpenAL Soft lets both levels go above 0 dB, up to +10 dB.
-			// Reference at "al/source.cpp", "eax_create_direct_filter_param".
-			const LONG millibels = std::clamp(static_cast<LONG>(std::lround(level * 100.0f)), eax::kMinLevel,
-				eax::kMaxSourceLevel);
+			const LONG millibels = eax::SourceLevelToMillibels(level);
 
 			eax::SetProperty(propertySet, eax::kSource, Deferred(eax::kSource_Direct), &millibels, sizeof(millibels), "direct level");
 			eax::SetProperty(propertySet, eax::kSource, Deferred(eax::kSource_Room), &millibels, sizeof(millibels), "room level");
 
-			if (level == 0.0f) {
+			if (level == 0.0f && !isShifted) {
 				g_leveledBuffers.erase(buffer);
 
 				return;
