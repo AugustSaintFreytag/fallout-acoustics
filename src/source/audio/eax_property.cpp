@@ -19,8 +19,17 @@ namespace sea::eax {
 	// Clamps to the EAX level range [kMinLevel, 0].
 	LONG DecibelsToMillibels(float decibels) {
 		const LONG millibels = static_cast<LONG>(std::lround(decibels * 100.0f));
-
 		return std::clamp(millibels, kMinLevel, 0L);
+	}
+
+	// Returns the given source level in dB converted to millibels.
+	// Clamps to the source level range [kMinLevel, kMaxSourceLevel].
+	//
+	// OpenAL Soft lets direct and room level go above 0 dB, up to +10 dB.
+	// Reference at "al/source.cpp", "eax_create_direct_filter_param".
+	LONG SourceLevelToMillibels(float decibels) {
+		const LONG millibels = static_cast<LONG>(std::lround(decibels * 100.0f));
+		return std::clamp(millibels, kMinLevel, kMaxSourceLevel);
 	}
 
 	// Sets an EAX property through a buffer's property set.
