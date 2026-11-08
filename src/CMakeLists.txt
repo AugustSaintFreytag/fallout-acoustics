@@ -71,6 +71,7 @@ add_library(SaintsAcoustics SHARED
 	source/reverb/listener.cpp
 	source/reverb/reverb.cpp
 	source/reverb/routing.cpp
+	source/reverb/threshold_shift.cpp
 
 	source/utils/log.cpp
 	source/utils/memory.cpp
